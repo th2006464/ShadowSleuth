@@ -50,6 +50,9 @@ fun ScanScreen(
     onNavigate: (Screen) -> Unit
 ) {
     val state by viewModel.scanState.collectAsState()
+    val minSizeKb by viewModel.minSizeKb.collectAsState()
+    val matchByFilename by viewModel.matchByFilename.collectAsState()
+    val matchBySize by viewModel.matchBySize.collectAsState()
     val context = LocalContext.current
 
     val startScanAction = {
@@ -119,8 +122,8 @@ fun ScanScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(
-                    selected = viewModel.matchByFilename,
-                    onClick = { viewModel.setMatchOptions(!viewModel.matchByFilename, viewModel.matchBySize) },
+                    selected = matchByFilename,
+                    onClick = { viewModel.setMatchOptions(!matchByFilename, matchBySize) },
                     label = { Text(stringResource(R.string.match_by_filename)) },
                     leadingIcon = {
                         Icon(
@@ -131,8 +134,8 @@ fun ScanScreen(
                     }
                 )
                 FilterChip(
-                    selected = viewModel.matchBySize,
-                    onClick = { viewModel.setMatchOptions(viewModel.matchByFilename, !viewModel.matchBySize) },
+                    selected = matchBySize,
+                    onClick = { viewModel.setMatchOptions(matchByFilename, !matchBySize) },
                     label = { Text(stringResource(R.string.match_by_size)) },
                     leadingIcon = {
                         Icon(
@@ -146,11 +149,11 @@ fun ScanScreen(
 
             // Small image threshold
             Text(
-                text = "忽略小于 ${viewModel.minSizeKb} KB 的图片",
+                text = "忽略小于 ${minSizeKb} KB 的图片",
                 style = MaterialTheme.typography.titleMedium
             )
             Slider(
-                value = viewModel.minSizeKb.toFloat(),
+                value = minSizeKb.toFloat(),
                 onValueChange = { viewModel.setMinSize(it.toInt()) },
                 valueRange = 0f..200f,
                 steps = 19,

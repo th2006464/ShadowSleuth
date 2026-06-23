@@ -54,7 +54,7 @@ class ImageScanner(private val context: Context) {
                             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                             id.toString()
                         ),
-                        path = cursor.getString(columnIndexes.data) ?: "",
+                        path = if (columnIndexes.data >= 0) cursor.getString(columnIndexes.data) ?: "" else "",
                         displayName = cursor.getString(columnIndexes.displayName) ?: "",
                         sizeBytes = size,
                         dateAdded = cursor.getLong(columnIndexes.dateAdded) * 1000,
@@ -97,7 +97,7 @@ class ImageScanner(private val context: Context) {
         val width = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.WIDTH)
         val height = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.HEIGHT)
         val mimeType = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE)
-        val data = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+        val data = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
     }
 
     companion object {

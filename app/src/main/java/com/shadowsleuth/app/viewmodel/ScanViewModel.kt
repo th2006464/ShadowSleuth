@@ -32,6 +32,7 @@ sealed class SearchState {
     data object Idle : SearchState()
     data object NoSample : SearchState()
     data class Ready(val sample: ImageMetadata, val groups: List<DuplicateGroup>) : SearchState()
+    data class Error(val message: String) : SearchState()
 }
 
 class ScanViewModel(application: Application) : AndroidViewModel(application) {
@@ -45,24 +46,24 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchState = MutableStateFlow<SearchState>(SearchState.NoSample)
     val searchState: StateFlow<SearchState> = _searchState.asStateFlow()
 
+    private val _minSizeKb = MutableStateFlow(50)
+    val minSizeKb: StateFlow<Int> = _minSizeKb.asStateFlow()
+
+    private val _matchByFilename = MutableStateFlow(true)
+    val matchByFilename: StateFlow<Boolean> = _matchByFilename.asStateFlow()
+
+    private val _matchBySize = MutableStateFlow(true)
+    val matchBySize: StateFlow<Boolean> = _matchBySize.asStateFlow()
+
     private var allImages: List<ImageMetadata> = emptyList()
 
-    var minSizeKb: Int = 50
-        private set
-
-    var matchByFilename: Boolean = true
-        private set
-
-    var matchBySize: Boolean = true
-        private set
-
     fun setMinSize(kb: Int) {
-        minSizeKb = kb
+        _minSizeKb.value = kb
     }
 
     fun setMatchOptions(filename: Boolean, size: Boolean) {
-        matchByFilename = filename
-        matchBySize = size
+        _matchByFilename.value = filename
+        _matchBySize.value = size
     }
 
     fun startScan() {
@@ -70,15 +71,15 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
             _scanState.value = ScanState.Scanning(0)
             try {
                 allImages = scanner.scanAllImages(
-                    minSizeBytes = minSizeKb * 1024L,
+                    minSizeBytes = minSizeKb.value * 1024L,
                     onProgress = { count ->
                         _scanState.value = ScanState.Scanning(count, "已扫描 $count 张图片…")
                     }
                 )
                 val groups = finder.findDuplicates(
                     allImages,
-                    matchByFilename = matchByFilename,
-                    matchBySize = matchBySize
+                    matchByFilename = matchByFilename.value,
+                    matchBySize = matchBySize.value
                 )
                 _scanState.value = ScanState.Complete(allImages, groups)
             } catch (e: Exception) {
@@ -89,21 +90,38 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     fun searchSample(sample: ImageMetadata) {
         viewModelScope.launch {
-            if (allImages.isEmpty()) {
-                allImages = scanner.scanAllImages(minSizeBytes = minSizeKb * 1024L)
+            try {
+                if (allImages.isEmpty()) {
+                    allImages = scanner.scanAllImages(minSizeBytes = minSizeKb.value * 1024L)
+                }
+                val groups = finder.findMatches(
+                    sample,
+                    allImages,
+                    matchByFilename = matchByFilename.value,
+                    matchBySize = matchBySize.value
+                )
+                _searchState.value = SearchState.Ready(sample, groups)
+            } catch (e: Exception) {
+                _searchState.value = SearchState.Error(e.message ?: "搜索失败")
             }
-            val groups = finder.findMatches(
-                sample,
-                allImages,
-                matchByFilename = matchByFilename,
-                matchBySize = matchBySize
-            )
-            _searchState.value = SearchState.Ready(sample, groups)
         }
     }
 
     fun clearSearchSample() {
         _searchState.value = SearchState.NoSample
+    }
+
+    fun setSearchError(message: String) {
+        _searchState.value = SearchState.Error(message)
+    }
+
+    fun findImageById(id: Long): ImageMetadata? {
+        val searchState = _searchState.value
+        if (searchState is SearchState.Ready) {
+            if (searchState.sample.id == id) return searchState.sample
+            searchState.groups.flatMap { it.images }.find { it.id == id }?.let { return it }
+        }
+        return allImages.find { it.id == id }
     }
 
     companion object {

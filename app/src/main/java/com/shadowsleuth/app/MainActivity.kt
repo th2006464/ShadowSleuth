@@ -139,9 +139,7 @@ private fun MainApp(
             }
             composable(Screen.Preview.route) { backStackEntry ->
                 val imageId = backStackEntry.arguments?.getString("imageId")
-                val state = viewModel.scanState.collectAsState().value
-                val allImages = if (state is com.shadowsleuth.app.viewmodel.ScanState.Complete) state.images else emptyList()
-                val image = allImages.find { it.id.toString() == imageId }
+                val image = imageId?.toLongOrNull()?.let { viewModel.findImageById(it) }
                 if (image != null) {
                     PreviewScreen(image = image, onBack = { navController.popBackStack() })
                 } else {

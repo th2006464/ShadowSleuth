@@ -57,8 +57,12 @@ fun SearchScreen(
         ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         uri?.let {
-            val metadata = uriToImageMetadata(context, it)
-            viewModel.searchSample(metadata)
+            try {
+                val metadata = uriToImageMetadata(context, it)
+                viewModel.searchSample(metadata)
+            } catch (e: Exception) {
+                viewModel.setSearchError(e.message ?: "无法读取所选图片")
+            }
         }
     }
 
@@ -119,30 +123,63 @@ fun SearchScreen(
                 is SearchState.Ready -> {
                     val sample = state.sample
                     val groups = state.groups
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Text(
-                            text = "样本图片",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ThumbnailImage(image = sample, size = 160)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.search_matches),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LazyColumn(
+                    if (groups.isEmpty()) {
+                        Box(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            contentAlignment = Alignment.Center
                         ) {
-                            items(groups, key = { it.id }) { group ->
-                                DuplicateGroupCard(
-                                    group = group,
-                                    onImageClick = onImageClick
-                                )
+                            Text(
+                                text = "未找到与该图片重复或相似的图片",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Text(
+                                text = "样本图片",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ThumbnailImage(image = sample, size = 160)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = stringResource(R.string.search_matches),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(bottom = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(groups, key = { it.id }) { group ->
+                                    DuplicateGroupCard(
+                                        group = group,
+                                        onImageClick = onImageClick
+                                    )
+                                }
                             }
+                        }
+                    }
+                }
+                is SearchState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "搜索失败",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = state.message,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
@@ -160,22 +197,30 @@ private fun uriToImageMetadata(context: android.content.Context, uri: Uri): Imag
     var height = 0
     var mimeType = "image/*"
 
-    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-        if (cursor.moveToFirst()) {
-            val displayNameIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.DISPLAY_NAME)
-            val sizeIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.SIZE)
-            val widthIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.WIDTH)
-            val heightIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.HEIGHT)
-            val mimeIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.MIME_TYPE)
-            val dataIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.DATA)
+    try {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val displayNameIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.DISPLAY_NAME)
+                    .takeIf { it >= 0 }
+                    ?: cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                val sizeIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.SIZE)
+                    .takeIf { it >= 0 }
+                    ?: cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                val widthIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.WIDTH)
+                val heightIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.HEIGHT)
+                val mimeIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.MIME_TYPE)
+                val dataIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.DATA)
 
-            if (displayNameIdx >= 0) displayName = cursor.getString(displayNameIdx) ?: displayName
-            if (sizeIdx >= 0) size = cursor.getLong(sizeIdx)
-            if (widthIdx >= 0) width = cursor.getInt(widthIdx)
-            if (heightIdx >= 0) height = cursor.getInt(heightIdx)
-            if (mimeIdx >= 0) mimeType = cursor.getString(mimeIdx) ?: mimeType
-            if (dataIdx >= 0) path = cursor.getString(dataIdx) ?: path
+                if (displayNameIdx >= 0) displayName = cursor.getString(displayNameIdx) ?: displayName
+                if (sizeIdx >= 0) size = cursor.getLong(sizeIdx)
+                if (widthIdx >= 0) width = cursor.getInt(widthIdx)
+                if (heightIdx >= 0) height = cursor.getInt(heightIdx)
+                if (mimeIdx >= 0) mimeType = cursor.getString(mimeIdx) ?: mimeType
+                if (dataIdx >= 0) path = cursor.getString(dataIdx) ?: path
+            }
         }
+    } catch (_: Exception) {
+        // 保持默认值，避免崩溃
     }
 
     return ImageMetadata(
