@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">双影密探</string>
+    <string name="app_name_en">ShadowSleuth</string>
+    <string name="scan">扫描</string>
+    <string name="results">结果</string>
+    <string name="search">搜索</string>
+    <string name="start_scan">开始扫描</string>
+    <string name="scanning">正在扫描…</string>
+    <string name="scan_complete">扫描完成</string>
+    <string name="no_duplicates">未找到重复图片</string>
+    <string name="permission_required">需要相册权限</string>
+    <string name="permission_rationale">双影密探需要读取相册权限才能查找重复图片。我们不会上传或删除任何图片。</string>
+    <string name="grant_permission">授予权限</string>
+    <string name="ignore_small_images">忽略小图</string>
+    <string name="match_by_filename">按文件名匹配</string>
+    <string name="match_by_size">按文件大小匹配</string>
+    <string name="sample_image">样本图片</string>
+    <string name="select_image">选择图片</string>
+    <string name="search_matches">匹配结果</string>
+    <string name="preview">预览</string>
+    <string name="close">关闭</string>
+    <string name="path">路径</string>
+    <string name="size">大小</string>
+    <string name="date">日期</string>
+    <string name="dimensions">尺寸</string>
+    <string name="duplicate_group">重复组</string>
+    <string name="match_type">匹配方式</string>
+    <string name="filename_match">文件名相同</string>
+    <string name="size_match">文件大小相同</string>
+</resources>

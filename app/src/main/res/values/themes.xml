@@ -1,0 +1,9 @@
+<resources>
+
+    <style name="Theme.ShadowSleuth" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+</resources>
