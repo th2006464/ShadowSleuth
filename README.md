@@ -59,9 +59,9 @@
 
 - **源码**：`app/` 目录下，Kotlin + Jetpack Compose + Material 3
 - **构建方式**：使用 Gradle Wrapper，`./gradlew assembleDebug`
-- **APK 产物**：`app/build/outputs/apk/debug/app-debug.apk`（Debug 包，约 16 MB）
+- **APK 产物**：`app/build/outputs/apk/debug/app-debug.apk`（Debug 包，约 17 MB）
 - **GitHub 直接下载**：[outputs/ShadowSleuth-debug.apk](https://github.com/th2006464/ShadowSleuth/blob/main/outputs/ShadowSleuth-debug.apk)
-- **版本标签**：[v1.0.3-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.3-debug)（启动时请求权限 + Checkbox 匹配规则）
+- **版本标签**：[v1.0.4-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.4-debug)（扁平化 UI + 新图标 + 长按菜单与删除）
 - **构建环境**：OpenJDK 17 + Android SDK 34 + Gradle 8.2
 
 ### 本地构建
@@ -79,7 +79,17 @@
 
 ### 更新日志
 
-- **v1.0.3-debug**（当前）
+- **v1.0.4-debug**（当前）
+  - 新增：全新扁平化 UI，采用靛蓝 + 青色 + 珊瑚色现代配色，支持深色模式
+  - 新增：重新设计 App 图标，两张重叠的照片卡片
+  - 新增：结果页与搜索页长按图片项，弹出「详细信息」和「删除」菜单
+  - 新增：图片详情弹窗，展示名称、大小、尺寸、格式、保存时间、路径
+  - 新增：删除图片确认对话框，确认后删除并刷新结果
+  - 优化：扫描页 Hero 卡片使用渐变背景，图标和标题居中且更小巧
+  - 优化：缩略图统一圆角，信息以标签形式展示
+  - 优化：预览页改为卡片式元信息布局
+
+- **v1.0.3-debug**
   - 新增：启动 App 时立即请求相册权限，无需先点击扫描
   - 新增：搜索页无权限时主动提示，避免直接进入选择器后失败
   - 优化：扫描页匹配规则改用 Checkbox 勾选，选择更清晰
