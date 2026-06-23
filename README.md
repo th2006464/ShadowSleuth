@@ -61,7 +61,7 @@
 - **构建方式**：使用 Gradle Wrapper，`./gradlew assembleDebug`
 - **APK 产物**：`app/build/outputs/apk/debug/app-debug.apk`（Debug 包，约 16 MB）
 - **GitHub 直接下载**：[outputs/ShadowSleuth-debug.apk](https://github.com/th2006464/ShadowSleuth/blob/main/outputs/ShadowSleuth-debug.apk)
-- **版本标签**：[v1.0.0-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.0-debug)（可在此手动创建正式 Release）
+- **版本标签**：[v1.0.1-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.1-debug)（修复拖动条与搜索闪退）
 - **构建环境**：OpenJDK 17 + Android SDK 34 + Gradle 8.2
 
 ### 本地构建
@@ -76,6 +76,17 @@
 
 - 当前为 **Debug 包**，仅供开发/测试安装。
 - 正式发布需要生成签名密钥并构建 Release 版本。
+
+### 更新日志
+
+- **v1.0.1-debug**（当前）
+  - 修复：扫描页“忽略小于 X KB”拖动条无法拖动
+  - 修复：搜索页选择图片后闪退（Android 10+ MediaStore.DATA 列缺失导致）
+  - 优化：搜索图片读取增加 OpenableColumns 回退与异常保护
+  - 优化：预览页可从搜索结果中定位图片
+
+- **v1.0.0-debug**
+  - 初始版本：完成扫描、结果、搜索、预览四个页面
 
 ---
 
