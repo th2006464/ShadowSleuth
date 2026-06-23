@@ -28,4 +28,12 @@
     <string name="match_type">匹配方式</string>
     <string name="filename_match">文件名相同</string>
     <string name="size_match">文件大小相同</string>
+    <string name="view_details">详细信息</string>
+    <string name="delete_image">删除图片</string>
+    <string name="delete_confirm_message">确定要删除「%1$s」吗？删除后无法恢复。</string>
+    <string name="delete">删除</string>
+    <string name="cancel">取消</string>
+    <string name="image_details">图片详情</string>
+    <string name="format">格式</string>
+    <string name="name">名称</string>
 </resources>

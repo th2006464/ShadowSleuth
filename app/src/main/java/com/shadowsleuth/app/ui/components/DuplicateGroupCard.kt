@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +21,7 @@ import com.shadowsleuth.app.data.model.ImageMetadata
 fun DuplicateGroupCard(
     group: DuplicateGroup,
     onImageClick: (ImageMetadata) -> Unit,
+    onImageLongClick: (ImageMetadata) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -28,7 +29,8 @@ fun DuplicateGroupCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.extraLarge
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -39,22 +41,24 @@ fun DuplicateGroupCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = group.subtitle,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             group.images.forEachIndexed { index, image ->
                 if (index > 0) {
-                    Divider(
+                    HorizontalDivider(
                         modifier = Modifier.padding(vertical = 4.dp),
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
                 }
                 ImageListItem(
                     image = image,
-                    onClick = { onImageClick(image) }
+                    onClick = { onImageClick(image) },
+                    onLongClick = { onImageLongClick(image) }
                 )
             }
         }

@@ -18,19 +18,25 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,10 +44,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.shadowsleuth.app.R
 import com.shadowsleuth.app.data.model.ImageMetadata
+import com.shadowsleuth.app.ui.components.DeleteConfirmDialog
 import com.shadowsleuth.app.ui.components.DuplicateGroupCard
+import com.shadowsleuth.app.ui.components.ImageActionBottomSheet
+import com.shadowsleuth.app.ui.components.ImageDetailDialog
 import com.shadowsleuth.app.ui.components.ThumbnailImage
 import com.shadowsleuth.app.viewmodel.ScanViewModel
 import com.shadowsleuth.app.viewmodel.SearchState
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +62,13 @@ fun SearchScreen(
 ) {
     val state = viewModel.searchState.collectAsState().value
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    var selectedImage by remember { mutableStateOf<ImageMetadata?>(null) }
+    var showActionSheet by remember { mutableStateOf(false) }
+    var showDetailDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     val pickImage = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -67,6 +84,7 @@ fun SearchScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.search)) },
@@ -160,7 +178,11 @@ fun SearchScreen(
                                 items(groups, key = { it.id }) { group ->
                                     DuplicateGroupCard(
                                         group = group,
-                                        onImageClick = onImageClick
+                                        onImageClick = onImageClick,
+                                        onImageLongClick = { image ->
+                                            selectedImage = image
+                                            showActionSheet = true
+                                        }
                                     )
                                 }
                             }
@@ -190,6 +212,53 @@ fun SearchScreen(
                 else -> {}
             }
         }
+    }
+
+    if (showActionSheet && selectedImage != null) {
+        ImageActionBottomSheet(
+            image = selectedImage!!,
+            onViewDetails = {
+                showActionSheet = false
+                showDetailDialog = true
+            },
+            onDelete = {
+                showActionSheet = false
+                showDeleteDialog = true
+            },
+            onDismiss = { showActionSheet = false }
+        )
+    }
+
+    if (showDetailDialog && selectedImage != null) {
+        ImageDetailDialog(
+            image = selectedImage!!,
+            onDismiss = { showDetailDialog = false }
+        )
+    }
+
+    if (showDeleteDialog && selectedImage != null) {
+        DeleteConfirmDialog(
+            image = selectedImage!!,
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.deleteImage(
+                    selectedImage!!,
+                    onSuccess = {
+                        selectedImage = null
+                        scope.launch {
+                            snackbarHostState.showSnackbar("图片已删除")
+                        }
+                    },
+                    onError = { message ->
+                        selectedImage = null
+                        scope.launch {
+                            snackbarHostState.showSnackbar(message)
+                        }
+                    }
+                )
+            },
+            onDismiss = { showDeleteDialog = false }
+        )
     }
 }
 

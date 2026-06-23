@@ -18,21 +18,31 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.shadowsleuth.app.R
 import com.shadowsleuth.app.data.model.ImageMetadata
+import com.shadowsleuth.app.ui.components.DeleteConfirmDialog
 import com.shadowsleuth.app.ui.components.DuplicateGroupCard
+import com.shadowsleuth.app.ui.components.ImageActionBottomSheet
+import com.shadowsleuth.app.ui.components.ImageDetailDialog
 import com.shadowsleuth.app.viewmodel.ScanState
 import com.shadowsleuth.app.viewmodel.ScanViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,8 +53,16 @@ fun ResultsScreen(
 ) {
     val state = viewModel.scanState.collectAsState().value
     val groups = if (state is ScanState.Complete) state.groups else emptyList()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    var selectedImage by remember { mutableStateOf<ImageMetadata?>(null) }
+    var showActionSheet by remember { mutableStateOf(false) }
+    var showDetailDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.results)) },
@@ -100,10 +118,61 @@ fun ResultsScreen(
                 items(groups, key = { it.id }) { group ->
                     DuplicateGroupCard(
                         group = group,
-                        onImageClick = onImageClick
+                        onImageClick = onImageClick,
+                        onImageLongClick = { image ->
+                            selectedImage = image
+                            showActionSheet = true
+                        }
                     )
                 }
             }
         }
+    }
+
+    if (showActionSheet && selectedImage != null) {
+        ImageActionBottomSheet(
+            image = selectedImage!!,
+            onViewDetails = {
+                showActionSheet = false
+                showDetailDialog = true
+            },
+            onDelete = {
+                showActionSheet = false
+                showDeleteDialog = true
+            },
+            onDismiss = { showActionSheet = false }
+        )
+    }
+
+    if (showDetailDialog && selectedImage != null) {
+        ImageDetailDialog(
+            image = selectedImage!!,
+            onDismiss = { showDetailDialog = false }
+        )
+    }
+
+    if (showDeleteDialog && selectedImage != null) {
+        DeleteConfirmDialog(
+            image = selectedImage!!,
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.deleteImage(
+                    selectedImage!!,
+                    onSuccess = {
+                        selectedImage = null
+                        scope.launch {
+                            snackbarHostState.showSnackbar("图片已删除")
+                        }
+                    },
+                    onError = { message ->
+                        selectedImage = null
+                        scope.launch {
+                            snackbarHostState.showSnackbar(message)
+                        }
+                    }
+                )
+            },
+            onDismiss = { showDeleteDialog = false }
+        )
     }
 }

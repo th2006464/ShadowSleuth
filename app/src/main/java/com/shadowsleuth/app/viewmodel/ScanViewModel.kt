@@ -111,6 +111,51 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         _searchState.value = SearchState.NoSample
     }
 
+    fun deleteImage(image: ImageMetadata, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val resolver = getApplication<Application>().contentResolver
+                val deletedRows = resolver.delete(image.uri, null, null)
+                if (deletedRows > 0) {
+                    removeImageFromState(image)
+                    onSuccess()
+                } else {
+                    onError("删除失败：系统未删除该图片")
+                }
+            } catch (e: SecurityException) {
+                onError("需要更高权限才能删除此图片，请手动在系统相册中删除")
+            } catch (e: Exception) {
+                onError(e.message ?: "删除图片失败")
+            }
+        }
+    }
+
+    private fun removeImageFromState(image: ImageMetadata) {
+        allImages = allImages.filter { it.id != image.id }
+
+        val currentScan = _scanState.value
+        if (currentScan is ScanState.Complete) {
+            val newImages = currentScan.images.filter { it.id != image.id }
+            val newGroups = currentScan.groups
+                .map { group -> group.copy(images = group.images.filter { it.id != image.id }) }
+                .filter { it.images.size >= 2 }
+            _scanState.value = ScanState.Complete(newImages, newGroups)
+        }
+
+        val currentSearch = _searchState.value
+        if (currentSearch is SearchState.Ready) {
+            val newSample = currentSearch.sample.takeIf { it.id != image.id }
+            val newGroups = currentSearch.groups
+                .map { group -> group.copy(images = group.images.filter { it.id != image.id }) }
+                .filter { it.images.size >= 2 }
+            _searchState.value = if (newSample != null) {
+                SearchState.Ready(newSample, newGroups)
+            } else {
+                SearchState.NoSample
+            }
+        }
+    }
+
     fun setSearchError(message: String) {
         _searchState.value = SearchState.Error(message)
     }
