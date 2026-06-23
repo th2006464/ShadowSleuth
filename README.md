@@ -60,6 +60,8 @@
 - **源码**：`app/` 目录下，Kotlin + Jetpack Compose + Material 3
 - **构建方式**：使用 Gradle Wrapper，`./gradlew assembleDebug`
 - **APK 产物**：`app/build/outputs/apk/debug/app-debug.apk`（Debug 包，约 16 MB）
+- **GitHub 直接下载**：[outputs/ShadowSleuth-debug.apk](https://github.com/th2006464/ShadowSleuth/blob/main/outputs/ShadowSleuth-debug.apk)
+- **版本标签**：[v1.0.0-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.0-debug)（可在此手动创建正式 Release）
 - **构建环境**：OpenJDK 17 + Android SDK 34 + Gradle 8.2
 
 ### 本地构建
