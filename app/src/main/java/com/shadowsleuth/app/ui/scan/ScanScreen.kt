@@ -1,6 +1,7 @@
 package com.shadowsleuth.app.ui.scan
 
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,14 +22,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoFixHigh
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,17 +72,28 @@ fun ScanScreen(
     viewModel: ScanViewModel,
     onRequestPermission: (String) -> Unit,
     onNavigate: (Screen) -> Unit,
-    onInfoClick: () -> Unit = {}
+    onInfoClick: () -> Unit = {},
+    onThemeClick: () -> Unit = {},
+    onRequestManageStorage: () -> Unit = {}
 ) {
     val state by viewModel.scanState.collectAsState()
     val minSizeKb by viewModel.minSizeKb.collectAsState()
-    val matchByFilename by viewModel.matchByFilename.collectAsState()
-    val matchBySize by viewModel.matchBySize.collectAsState()
     val context = LocalContext.current
 
     var selectedExifImage by remember { mutableStateOf<ImageMetadata?>(null) }
     var exifInfo by remember { mutableStateOf<ExifInfo?>(null) }
     var showExifDialog by remember { mutableStateOf(false) }
+    var pendingAutoNavigate by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state, pendingAutoNavigate) {
+        if (pendingAutoNavigate && state is ScanState.Complete) {
+            pendingAutoNavigate = false
+            onNavigate(Screen.Results)
+        }
+        if (state is ScanState.Error) {
+            pendingAutoNavigate = false
+        }
+    }
 
     val pickImageForExif = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -107,6 +116,7 @@ fun ScanScreen(
 
     val startScanAction = {
         if (ScanViewModel.hasPermission(context)) {
+            pendingAutoNavigate = true
             viewModel.startScan()
         } else {
             onRequestPermission(ScanViewModel.getRequiredPermission())
@@ -131,10 +141,16 @@ fun ScanScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = onThemeClick) {
+                        Icon(
+                            imageVector = Icons.Filled.DarkMode,
+                            contentDescription = stringResource(R.string.theme)
+                        )
+                    }
                     IconButton(onClick = onInfoClick) {
                         Icon(
                             imageVector = Icons.Filled.Info,
-                            contentDescription = "关于"
+                            contentDescription = stringResource(R.string.about)
                         )
                     }
                 },
@@ -157,37 +173,10 @@ fun ScanScreen(
 
             HeroCard()
 
-            // Matching rules
-            Text(
-                text = "匹配规则",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                shape = MaterialTheme.shapes.extraLarge
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                !ScanViewModel.hasManageStoragePermission()
             ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 8.dp)
-                ) {
-                    RuleCheckBox(
-                        text = stringResource(R.string.match_by_filename),
-                        checked = matchByFilename,
-                        onCheckedChange = { checked ->
-                            viewModel.setMatchOptions(checked, matchBySize)
-                        }
-                    )
-                    RuleCheckBox(
-                        text = stringResource(R.string.match_by_size),
-                        checked = matchBySize,
-                        onCheckedChange = { checked ->
-                            viewModel.setMatchOptions(matchByFilename, checked)
-                        }
-                    )
-                }
+                ManageStorageBanner(onClick = onRequestManageStorage)
             }
 
             // Small image threshold
@@ -245,25 +234,6 @@ fun ScanScreen(
                                 text = (state as ScanState.Scanning).message,
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                        }
-                    }
-                }
-                is ScanState.Complete -> {
-                    val complete = state as ScanState.Complete
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "找到 ${complete.groups.size} 组重复图片",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(
-                            onClick = { onNavigate(Screen.Results) },
-                            modifier = Modifier.fillMaxWidth(0.7f)
-                        ) {
-                            Text("查看结果")
                         }
                     }
                 }
@@ -376,25 +346,39 @@ private fun HeroCard() {
 }
 
 @Composable
-private fun RuleCheckBox(
-    text: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun ManageStorageBanner(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.extraLarge
     ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge
-        )
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.manage_storage_required),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.manage_storage_rationale),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = onClick,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
+                )
+            ) {
+                Text(stringResource(R.string.go_to_settings))
+            }
+        }
     }
 }

@@ -7,6 +7,15 @@ import java.util.UUID
 
 /**
  * 重复图片查找器
+ *
+ * 匹配规则：
+ * - 文件名相同（忽略大小写）
+ * - 文件字节大小相同
+ *
+ * 排除规则：
+ * - 组内所有图片的保存时间（MediaStore DATE_ADDED，精确到秒）完全一致时，
+ *   不视为重复组，避免误报。
+ * - 宽或高为 0 的无效图片已在扫描阶段过滤，不再进入匹配。
  */
 class DuplicateFinder {
 
@@ -27,6 +36,7 @@ class DuplicateFinder {
             val byName = images.groupBy { it.displayName.lowercase() }
             byName.values
                 .filter { it.size >= 2 }
+                .filter { !allSameSaveTime(it) }
                 .forEach { groupImages ->
                     groups.add(
                         DuplicateGroup(
@@ -42,6 +52,7 @@ class DuplicateFinder {
             val bySize = images.groupBy { it.sizeBytes }
             bySize.values
                 .filter { it.size >= 2 }
+                .filter { !allSameSaveTime(it) }
                 .forEach { groupImages ->
                     groups.add(
                         DuplicateGroup(
@@ -70,12 +81,13 @@ class DuplicateFinder {
 
         if (matchByFilename) {
             val matches = others.filter { it.displayName.equals(sample.displayName, ignoreCase = true) }
-            if (matches.isNotEmpty()) {
+            val groupImages = (listOf(sample) + matches)
+            if (matches.isNotEmpty() && !allSameSaveTime(groupImages)) {
                 groups.add(
                     DuplicateGroup(
                         id = UUID.randomUUID().toString(),
                         matchType = MatchType.FILENAME,
-                        images = (listOf(sample) + matches).sortedByDescending { it.dateAdded }
+                        images = groupImages.sortedByDescending { it.dateAdded }
                     )
                 )
             }
@@ -83,17 +95,27 @@ class DuplicateFinder {
 
         if (matchBySize) {
             val matches = others.filter { it.sizeBytes == sample.sizeBytes }
-            if (matches.isNotEmpty()) {
+            val groupImages = (listOf(sample) + matches)
+            if (matches.isNotEmpty() && !allSameSaveTime(groupImages)) {
                 groups.add(
                     DuplicateGroup(
                         id = UUID.randomUUID().toString(),
                         matchType = MatchType.SIZE,
-                        images = (listOf(sample) + matches).sortedByDescending { it.dateAdded }
+                        images = groupImages.sortedByDescending { it.dateAdded }
                     )
                 )
             }
         }
 
         return groups
+    }
+
+    /**
+     * 判断一组图片是否保存时间完全一致（精确到秒）
+     */
+    private fun allSameSaveTime(images: List<ImageMetadata>): Boolean {
+        if (images.size < 2) return false
+        val firstSecond = images.first().dateAdded / 1000
+        return images.all { it.dateAdded / 1000 == firstSecond }
     }
 }

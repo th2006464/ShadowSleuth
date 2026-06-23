@@ -38,4 +38,12 @@
     <string name="name">名称</string>
     <string name="got_it">知道了</string>
     <string name="about">关于</string>
+    <string name="theme">主题</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_select">选择主题</string>
+    <string name="manage_storage_required">需要完整存储权限</string>
+    <string name="manage_storage_rationale">Android 10+ 删除图片需要完整存储访问权限，前往系统设置开启后可一次授权、无需每次删除确认。</string>
+    <string name="go_to_settings">前往设置</string>
 </resources>

@@ -1,6 +1,10 @@
 package com.shadowsleuth.app
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -46,17 +50,26 @@ import com.shadowsleuth.app.ui.results.ResultsScreen
 import com.shadowsleuth.app.ui.scan.ScanScreen
 import com.shadowsleuth.app.ui.search.SearchScreen
 import com.shadowsleuth.app.ui.theme.ShadowSleuthTheme
+import com.shadowsleuth.app.ui.theme.ThemeMode
+import com.shadowsleuth.app.ui.theme.ThemeViewModel
 import com.shadowsleuth.app.viewmodel.ScanViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: ScanViewModel by viewModels()
+    private val themeViewModel: ThemeViewModel by viewModels()
 
     private val permissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { _ ->
         // 用户授权后不会自动扫描，需点击主页「开始扫描」按钮手动触发
+    }
+
+    private val manageStorageLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
+        // 用户从设置返回后，MainApp 会重新检查并隐藏提示
     }
 
     private val deletePermissionLauncher = registerForActivityResult(
@@ -90,13 +103,33 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            ShadowSleuthTheme {
+            val themeMode by themeViewModel.themeMode.collectAsState()
+            ShadowSleuthTheme(themeMode = themeMode) {
                 val navController = rememberNavController()
-                MainApp(navController, viewModel) { permission ->
-                    permissionsLauncher.launch(arrayOf(permission))
-                }
+                MainApp(
+                    navController = navController,
+                    viewModel = viewModel,
+                    themeViewModel = themeViewModel,
+                    onRequestPermission = { permission ->
+                        permissionsLauncher.launch(arrayOf(permission))
+                    },
+                    onRequestManageStorage = { openManageStorageSettings() }
+                )
             }
         }
+    }
+
+    private fun openManageStorageSettings() {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                data = Uri.fromParts("package", packageName, null)
+            }
+        } else {
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", packageName, null)
+            }
+        }
+        manageStorageLauncher.launch(intent)
     }
 }
 
@@ -104,7 +137,9 @@ class MainActivity : ComponentActivity() {
 private fun MainApp(
     navController: NavHostController,
     viewModel: ScanViewModel,
-    onRequestPermission: (String) -> Unit
+    themeViewModel: ThemeViewModel,
+    onRequestPermission: (String) -> Unit,
+    onRequestManageStorage: () -> Unit
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -112,6 +147,7 @@ private fun MainApp(
     val showBottomBar = currentRoute in bottomBarItems.map { it.route }
 
     var showInfoDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
@@ -167,7 +203,9 @@ private fun MainApp(
                     viewModel = viewModel,
                     onRequestPermission = onRequestPermission,
                     onNavigate = { navController.navigate(it.route) },
-                    onInfoClick = { showInfoDialog = true }
+                    onInfoClick = { showInfoDialog = true },
+                    onThemeClick = { showThemeDialog = true },
+                    onRequestManageStorage = onRequestManageStorage
                 )
             }
             composable(Screen.Results.route) {
@@ -206,6 +244,17 @@ private fun MainApp(
 
     if (showInfoDialog) {
         InfoDialog(onDismiss = { showInfoDialog = false })
+    }
+
+    if (showThemeDialog) {
+        ThemePickerDialog(
+            currentMode = themeViewModel.themeMode.collectAsState().value,
+            onModeSelected = { mode ->
+                themeViewModel.setThemeMode(mode)
+                showThemeDialog = false
+            },
+            onDismiss = { showThemeDialog = false }
+        )
     }
 }
 
@@ -267,4 +316,60 @@ private fun InfoDialog(onDismiss: () -> Unit) {
             }
         }
     )
+}
+
+@Composable
+private fun ThemePickerDialog(
+    currentMode: ThemeMode,
+    onModeSelected: (ThemeMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("主题模式") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                ThemeOption(
+                    label = stringResource(R.string.theme_light),
+                    selected = currentMode == ThemeMode.LIGHT,
+                    onClick = { onModeSelected(ThemeMode.LIGHT) }
+                )
+                ThemeOption(
+                    label = stringResource(R.string.theme_dark),
+                    selected = currentMode == ThemeMode.DARK,
+                    onClick = { onModeSelected(ThemeMode.DARK) }
+                )
+                ThemeOption(
+                    label = stringResource(R.string.theme_system),
+                    selected = currentMode == ThemeMode.SYSTEM,
+                    onClick = { onModeSelected(ThemeMode.SYSTEM) }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun ThemeOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = if (selected) "✓ $label" else label,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+        )
+    }
 }

@@ -224,7 +224,8 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         /**
-         * Android 9 及以下删除文件需要 WRITE_EXTERNAL_STORAGE 权限
+         * Android 9 及以下删除文件需要 WRITE_EXTERNAL_STORAGE 权限。
+         * 在 Android 10+ 上该权限已无法直接删除共享目录图片，但仍请求它作为辅助。
          */
         fun getWritePermission(): String {
             return android.Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -244,11 +245,21 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     android.content.pm.PackageManager.PERMISSION_GRANTED
         }
 
+        /**
+         * Android 10+ 上需要 MANAGE_EXTERNAL_STORAGE 才能避免每次删除都弹系统授权框。
+         */
+        fun hasManageStoragePermission(): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.os.Environment.isExternalStorageManager()
+            } else {
+                false
+            }
+        }
+
         fun getAllRequiredPermissions(): Array<String> {
             val permissions = mutableListOf(getRequiredPermission())
-            if (needWritePermissionForDelete()) {
-                permissions.add(getWritePermission())
-            }
+            // 大胆请求 WRITE_EXTERNAL_STORAGE，即使 Android 10+ 仅作辅助
+            permissions.add(getWritePermission())
             return permissions.toTypedArray()
         }
     }

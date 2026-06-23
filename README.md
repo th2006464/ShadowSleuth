@@ -19,16 +19,18 @@
 
 - **批量全局查重**：扫描 DCIM、截图、下载、社交应用保存图片、Pictures 等目录
 - **双规则匹配**：按文件名、文件字节大小两套规则判定疑似重复
+- **保存时间排除**：组内图片保存时间完全一致（精确到秒）时，不计入重复结果，减少误报
 - **分组对比展示**：相同批次重复图分为一组，列表展示缩略图与元信息
 - **单图定向检索**：从相册任选一张图片作为样本，全局找出同名或同大小的图片
 - **原图预览**：点击缩略图进入全屏原图查看，保留时间、大小等元信息
 - **轻量过滤**：可忽略小于指定 KB 的极小图片，减少无效结果
-- **手动触发扫描**：启动授权后不会自动扫描，用户点击「开始扫描」才执行，避免不必要的资源占用
+- **手动触发扫描**：启动授权后不会自动扫描，用户点击「开始扫描」按钮才执行，避免不必要的资源占用
+- **结果直接展示**：扫描完成后自动跳转到结果页，无需额外选择匹配规则
 - **结果分类筛选**：结果页顶部提供「全部 / 文件名相同 / 文件大小相同」单选筛选，快速定位不同类型的重复项
-- **图片 EXIF 详情**：主页新增「查看图片详细信息」，选择图片后展示名称、大小、尺寸、格式、添加时间、EXIF 拍摄时间、设备厂商、GPS 位置等元信息
-- **关于与版权提示**：主页右上角新增信息按钮，展示项目 GitHub 链接、联系方式与常见版权提醒
+- **图片 EXIF 详情**：主页「查看图片详细信息」可选择图片查看 EXIF 元信息（拍摄时间、设备、GPS、光圈、ISO 等）
+- **关于与版权提示**：主页右上角信息按钮，展示项目 GitHub 链接、联系方式与版权提醒
 - **长按操作**：长按图片项可查看详细信息或删除图片（删除前带确认弹窗）
-- **深色主题**：默认采用深色专业风格，减少视觉疲劳
+- **主题切换**：支持浅色、深色、跟随系统三种模式，主题选择持久化保存
 
 ---
 
@@ -38,7 +40,7 @@
 - 📦 **体积小**：原生优先、少依赖第三方库，安装包尽量精简
 - 🔋 **省资源**：异步扫描、低内存占用、不后台常驻
 - 🔒 **纯本地**：不上传任何图片，无网络请求
-- 🛡️ **权限友好**：适配 Android 10 ~ 14 分区存储，删除时按系统要求请求授权
+- 🛡️ **权限友好**：适配 Android 8 ~ 14，启动时请求读写权限，Android 10+ 提供完整存储权限开关入口
 
 ---
 
@@ -52,9 +54,11 @@ APP 采用轻量级原生架构，核心模块职责清晰：
 |------|------|------|
 | **UI 层** | `ui/scan`、`ui/results`、`ui/search`、`ui/preview` | 展示扫描、结果、搜索、预览四个页面 |
 | **扫描器** | `data/ImageScanner.kt` | 通过 `MediaStore` + `ContentResolver` 读取本地图片元数据 |
-| **匹配器** | `data/DuplicateFinder.kt` | 按文件名 / 文件大小分组判定重复 |
-| **状态容器** | `viewmodel/ScanViewModel.kt` | 持有扫描状态、搜索状态、匹配规则，并处理删除逻辑 |
-| **权限处理** | `MainActivity.kt` | 启动时请求读取权限，删除时按系统要求请求用户授权 |
+| **匹配器** | `data/DuplicateFinder.kt` | 按文件名 / 文件大小分组判定重复，并排除保存时间完全一致的组 |
+| **EXIF 读取器** | `data/ExifReader.kt` | 读取图片 EXIF 与尺寸信息 |
+| **状态容器** | `viewmodel/ScanViewModel.kt` | 持有扫描状态、搜索状态，并处理删除逻辑 |
+| **主题容器** | `ui/theme/ThemeViewModel.kt` | 持有浅色 / 深色 / 跟随系统主题模式 |
+| **权限处理** | `MainActivity.kt` | 启动时请求读写权限，删除时处理系统授权对话框 |
 
 ```
 用户点击「开始扫描」
@@ -65,11 +69,11 @@ ImageScanner 查询 MediaStore.Images.Media.EXTERNAL_CONTENT_URI
     ↓
 提取元数据：ID、URI、文件名、大小、添加时间、分辨率、MIME 类型
     ↓
-DuplicateFinder 按规则分组（文件名 / 文件大小）
+DuplicateFinder 按规则分组（文件名 / 大小），排除保存时间完全一致的组
     ↓
 ScanViewModel 更新 ScanState.Complete
     ↓
-ResultsScreen 以分组卡片形式展示
+自动跳转到 ResultsScreen 以分组卡片形式展示
     ↓
 长按图片 → 查看详情 / 删除
 ```
@@ -80,16 +84,25 @@ ResultsScreen 以分组卡片形式展示
 2. **双规则匹配**：
    - **文件名相同**：`displayName.equals(..., ignoreCase = true)` 判定，适合找出同名重复下载/保存的图片。
    - **文件大小相同**：`sizeBytes` 完全一致。相同字节大小的图片极大概率是重复或高度相似的副本。
-3. **过滤策略**：
+3. **排除保存时间完全一致的组**：组内所有图片的 `dateAdded / 1000` 完全一致时，不视为重复组。
+4. **过滤策略**：
    - 小于用户设定阈值（默认 50KB）的图片被忽略。
    - 宽或高为 `0` 的图片被视为无效/损坏元数据，不计入重复结果。
-4. **单图搜索**：先扫描全库得到 `allImages`，然后以选中的样本图为基准，在全库中匹配同名或同大小的图片。
+5. **单图搜索**：先扫描全库得到 `allImages`，然后以选中的样本图为基准，在全库中匹配同名或同大小的图片。
 
 ### 删除机制
 
-- **Android 10+（API 29+）**：使用分区存储，删除 MediaStore 图片时若系统抛出 `RecoverableSecurityException`，APP 会启动系统提供的授权对话框，用户确认后再次执行删除。
+- **Android 10+（API 29+）**：使用分区存储。
+  - 推荐：开启 `MANAGE_EXTERNAL_STORAGE` 完整存储权限，删除无需二次确认。
+  - 降级：删除 MediaStore 图片时若系统抛出 `RecoverableSecurityException`，APP 会启动系统提供的授权对话框，用户确认后再次执行删除。
 - **Android 9 及以下**：启动时一并请求 `WRITE_EXTERNAL_STORAGE` 权限，获得后直接删除。
 - 删除成功后，APP 会从内存状态和结果列表中移除该图片，无需重新扫描。
+
+### 主题系统
+
+- 使用 `DataStore` 持久化用户选择的主题模式（浅色 / 深色 / 跟随系统）。
+- `ThemeViewModel` 通过 `StateFlow` 暴露当前模式。
+- `MainActivity` 收集主题模式并传入 `ShadowSleuthTheme(...)`，主题切换立即生效。
 
 ---
 
@@ -106,7 +119,7 @@ ResultsScreen 以分组卡片形式展示
 - **构建方式**：使用 Gradle Wrapper，`./gradlew assembleDebug`
 - **APK 产物**：`app/build/outputs/apk/debug/app-debug.apk`（Debug 包，约 17 MB）
 - **GitHub 直接下载**：[outputs/ShadowSleuth-debug.apk](https://github.com/th2006464/ShadowSleuth/blob/main/outputs/ShadowSleuth-debug.apk)
-- **版本标签**：[v1.0.7-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.7-debug)（移除分辨率匹配 + 手动扫描 + 结果筛选 + EXIF 详情 + 关于弹窗）
+- **版本标签**：[v1.0.8-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.8-debug)（主题切换 + 直接扫描 + 保存时间排除 + 权限优化 + 文档整理）
 - **构建环境**：OpenJDK 17 + Android SDK 34 + Gradle 8.2
 
 ### 本地构建
@@ -126,7 +139,18 @@ ResultsScreen 以分组卡片形式展示
 
 ## 更新日志
 
-- **v1.0.7-debug**（当前）
+- **v1.0.8-debug**（当前）
+  - 新增：浅色 / 深色 / 跟随系统主题切换，使用 DataStore 持久化，系统深色时自动切换深色
+  - 新增：扫描页右上角主题切换按钮
+  - 优化：扫描页移除匹配规则选项，点击「开始扫描」后直接扫描并跳转到结果页
+  - 优化：搜索结果页移除匹配规则选项，选择图片后直接按默认规则匹配
+  - 新增：匹配结果排除保存时间完全一致（精确到秒）的组，减少误报
+  - 优化：启动时大胆请求 `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` + `WRITE_EXTERNAL_STORAGE`
+  - 新增：Android 10+ 提供 `MANAGE_EXTERNAL_STORAGE` 完整存储权限开关入口，开启后删除无需二次授权
+  - 整理：新增 `docs/skills.md` 和 `docs/project-experience.md`，沉淀可复用技能与项目经验
+  - 更新：README、架构文档、需求文档与文档导航
+
+- **v1.0.7-debug**
   - 移除：按分辨率匹配规则及其相关 UI（效果不佳，易误报）
   - 新增：授权后不再自动扫描，用户点击「开始扫描」按钮才执行扫描
   - 新增：结果页顶部改为「全部 / 文件名相同 / 文件大小相同」单选筛选
@@ -184,7 +208,9 @@ ResultsScreen 以分组卡片形式展示
 |------|------|
 | [docs/requirements.md](docs/requirements.md) | 功能需求、非功能需求与明确不做 |
 | [docs/design-system.md](docs/design-system.md) | 设计原则、颜色、字体、组件规范 |
-| [docs/architecture.md](docs/architecture.md) | 技术架构、数据流与性能优化策略 |
+| [docs/architecture.md](docs/architecture.md) | 技术架构、数据流、主题系统、权限模型与性能优化策略 |
+| [docs/skills.md](docs/skills.md) | 项目沉淀的可复用技能、工作流程与踩坑经验 |
+| [docs/project-experience.md](docs/project-experience.md) | 从 0 到 v1.0.8 的迭代经验、关键决策与后续方向 |
 | [prototypes/index.html](prototypes/index.html) | UI 原型页面导航 |
 
 ---
@@ -204,4 +230,4 @@ ResultsScreen 以分组卡片形式展示
 
 ---
 
-*Last updated: 2026-06-24 (v1.0.7-debug)*
+*Last updated: 2026-06-24 (v1.0.8-debug)*
