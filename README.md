@@ -53,18 +53,27 @@
 - **仓库地址**: https://github.com/th2006464/ShadowSleuth.git
 - 源码、APK 构建产物及后续版本迭代均会在此仓库维护。
 
-## 快速开始（开发准备）
+## 快速开始
 
-本项目为 Android APK，后续将进入实际编码阶段。当前阶段已产出：
-- 需求文档
-- 设计系统
-- 技术架构文档
-- 交互原型（HTML 可预览）
+本项目为 Android APK，已完成初始版本的源码开发与 Debug 构建：
 
-下一步建议：
-1. 确认原型交互是否符合预期
-2. 根据架构文档开始搭建 Android 工程
-3. 实现扫描器、匹配器、分组器等核心模块
+- **源码**：`app/` 目录下，Kotlin + Jetpack Compose + Material 3
+- **构建方式**：使用 Gradle Wrapper，`./gradlew assembleDebug`
+- **APK 产物**：`app/build/outputs/apk/debug/app-debug.apk`（Debug 包，约 16 MB）
+- **构建环境**：OpenJDK 17 + Android SDK 34 + Gradle 8.2
+
+### 本地构建
+
+```bash
+./gradlew assembleDebug
+```
+
+构建成功后 APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。
+
+### 注意
+
+- 当前为 **Debug 包**，仅供开发/测试安装。
+- 正式发布需要生成签名密钥并构建 Release 版本。
 
 ---
 
