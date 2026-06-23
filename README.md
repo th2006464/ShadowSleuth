@@ -61,7 +61,7 @@
 - **构建方式**：使用 Gradle Wrapper，`./gradlew assembleDebug`
 - **APK 产物**：`app/build/outputs/apk/debug/app-debug.apk`（Debug 包，约 16 MB）
 - **GitHub 直接下载**：[outputs/ShadowSleuth-debug.apk](https://github.com/th2006464/ShadowSleuth/blob/main/outputs/ShadowSleuth-debug.apk)
-- **版本标签**：[v1.0.2-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.2-debug)（匹配结果改为列表式展示）
+- **版本标签**：[v1.0.3-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.3-debug)（启动时请求权限 + Checkbox 匹配规则）
 - **构建环境**：OpenJDK 17 + Android SDK 34 + Gradle 8.2
 
 ### 本地构建
@@ -79,7 +79,13 @@
 
 ### 更新日志
 
-- **v1.0.2-debug**（当前）
+- **v1.0.3-debug**（当前）
+  - 新增：启动 App 时立即请求相册权限，无需先点击扫描
+  - 新增：搜索页无权限时主动提示，避免直接进入选择器后失败
+  - 优化：扫描页匹配规则改用 Checkbox 勾选，选择更清晰
+  - 优化：扫描页顶部标题和图标居中并缩小
+
+- **v1.0.2-debug**
   - 新增：匹配结果改为列表式展示，每个图片左侧显示小缩略图，右侧显示名称、保存时间、大小和尺寸
 
 - **v1.0.1-debug**
