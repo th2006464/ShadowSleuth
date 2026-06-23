@@ -60,9 +60,6 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private val _matchBySize = MutableStateFlow(true)
     val matchBySize: StateFlow<Boolean> = _matchBySize.asStateFlow()
 
-    private val _matchByDimensions = MutableStateFlow(true)
-    val matchByDimensions: StateFlow<Boolean> = _matchByDimensions.asStateFlow()
-
     private val _scrollToTopResults = MutableSharedFlow<Unit>()
     val scrollToTopResults: SharedFlow<Unit> = _scrollToTopResults.asSharedFlow()
 
@@ -83,10 +80,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         _minSizeKb.value = kb
     }
 
-    fun setMatchOptions(filename: Boolean, size: Boolean, dimensions: Boolean) {
+    fun setMatchOptions(filename: Boolean, size: Boolean) {
         _matchByFilename.value = filename
         _matchBySize.value = size
-        _matchByDimensions.value = dimensions
     }
 
     fun startScan() {
@@ -102,8 +98,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 val groups = finder.findDuplicates(
                     allImages,
                     matchByFilename = matchByFilename.value,
-                    matchBySize = matchBySize.value,
-                    matchByDimensions = matchByDimensions.value
+                    matchBySize = matchBySize.value
                 )
                 _scanState.value = ScanState.Complete(allImages, groups)
             } catch (e: Exception) {
@@ -122,8 +117,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     sample,
                     allImages,
                     matchByFilename = matchByFilename.value,
-                    matchBySize = matchBySize.value,
-                    matchByDimensions = matchByDimensions.value
+                    matchBySize = matchBySize.value
                 )
                 _searchState.value = SearchState.Ready(sample, groups)
             } catch (e: Exception) {

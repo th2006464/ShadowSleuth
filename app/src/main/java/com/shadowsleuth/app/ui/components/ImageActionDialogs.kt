@@ -212,7 +212,7 @@ private fun ActionSheetItem(
 }
 
 @Composable
-private fun DetailRow(label: String, value: String) {
+internal fun DetailRow(label: String, value: String) {
     Column {
         Text(
             text = label,

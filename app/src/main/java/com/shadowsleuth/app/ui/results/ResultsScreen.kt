@@ -55,6 +55,12 @@ import com.shadowsleuth.app.viewmodel.ScanState
 import com.shadowsleuth.app.viewmodel.ScanViewModel
 import kotlinx.coroutines.launch
 
+private enum class ResultFilter {
+    ALL,
+    FILENAME,
+    SIZE
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultsScreen(
@@ -68,18 +74,14 @@ fun ResultsScreen(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
-    var filterFilename by remember { mutableStateOf(true) }
-    var filterSize by remember { mutableStateOf(true) }
-    var filterDimensions by remember { mutableStateOf(true) }
+    var currentFilter by remember { mutableStateOf(ResultFilter.ALL) }
 
-    val groups by remember(allGroups, filterFilename, filterSize, filterDimensions) {
+    val groups by remember(allGroups, currentFilter) {
         derivedStateOf {
-            allGroups.filter { group ->
-                when (group.matchType) {
-                    DuplicateGroup.MatchType.FILENAME -> filterFilename
-                    DuplicateGroup.MatchType.SIZE -> filterSize
-                    DuplicateGroup.MatchType.DIMENSIONS -> filterDimensions
-                }
+            when (currentFilter) {
+                ResultFilter.ALL -> allGroups
+                ResultFilter.FILENAME -> allGroups.filter { it.matchType == DuplicateGroup.MatchType.FILENAME }
+                ResultFilter.SIZE -> allGroups.filter { it.matchType == DuplicateGroup.MatchType.SIZE }
             }
         }
     }
@@ -183,12 +185,8 @@ fun ResultsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     FilterChipsRow(
-                        filterFilename = filterFilename,
-                        filterSize = filterSize,
-                        filterDimensions = filterDimensions,
-                        onFilterFilename = { filterFilename = it },
-                        onFilterSize = { filterSize = it },
-                        onFilterDimensions = { filterDimensions = it }
+                        currentFilter = currentFilter,
+                        onFilterSelected = { currentFilter = it }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -257,33 +255,29 @@ fun ResultsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterChipsRow(
-    filterFilename: Boolean,
-    filterSize: Boolean,
-    filterDimensions: Boolean,
-    onFilterFilename: (Boolean) -> Unit,
-    onFilterSize: (Boolean) -> Unit,
-    onFilterDimensions: (Boolean) -> Unit
+    currentFilter: ResultFilter,
+    onFilterSelected: (ResultFilter) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         MatchFilterChip(
-            selected = filterFilename,
-            onSelectedChange = onFilterFilename,
+            selected = currentFilter == ResultFilter.ALL,
+            onSelectedChange = { onFilterSelected(ResultFilter.ALL) },
+            label = "全部",
+            modifier = Modifier.weight(1f)
+        )
+        MatchFilterChip(
+            selected = currentFilter == ResultFilter.FILENAME,
+            onSelectedChange = { onFilterSelected(ResultFilter.FILENAME) },
             label = stringResource(R.string.filename_match),
             modifier = Modifier.weight(1f)
         )
         MatchFilterChip(
-            selected = filterSize,
-            onSelectedChange = onFilterSize,
+            selected = currentFilter == ResultFilter.SIZE,
+            onSelectedChange = { onFilterSelected(ResultFilter.SIZE) },
             label = stringResource(R.string.size_match),
-            modifier = Modifier.weight(1f)
-        )
-        MatchFilterChip(
-            selected = filterDimensions,
-            onSelectedChange = onFilterDimensions,
-            label = stringResource(R.string.dimensions_match),
             modifier = Modifier.weight(1f)
         )
     }
@@ -293,13 +287,13 @@ private fun FilterChipsRow(
 @Composable
 private fun MatchFilterChip(
     selected: Boolean,
-    onSelectedChange: (Boolean) -> Unit,
+    onSelectedChange: () -> Unit,
     label: String,
     modifier: Modifier = Modifier
 ) {
     FilterChip(
         selected = selected,
-        onClick = { onSelectedChange(!selected) },
+        onClick = onSelectedChange,
         label = { Text(label, style = MaterialTheme.typography.labelMedium) },
         modifier = modifier,
         colors = FilterChipDefaults.filterChipColors(

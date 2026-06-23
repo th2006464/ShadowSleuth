@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.shadowsleuth.app.R
+import com.shadowsleuth.app.data.ImageScanner
 import com.shadowsleuth.app.data.model.ImageMetadata
 import com.shadowsleuth.app.ui.components.DeleteConfirmDialog
 import com.shadowsleuth.app.ui.components.DuplicateGroupCard
@@ -67,7 +68,6 @@ fun SearchScreen(
 ) {
     val matchByFilename by viewModel.matchByFilename.collectAsState()
     val matchBySize by viewModel.matchBySize.collectAsState()
-    val matchByDimensions by viewModel.matchByDimensions.collectAsState()
     val state = viewModel.searchState.collectAsState().value
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -83,7 +83,7 @@ fun SearchScreen(
     ) { uri: Uri? ->
         uri?.let {
             try {
-                val metadata = uriToImageMetadata(context, it)
+                val metadata = ImageScanner.uriToImageMetadata(context, it)
                 viewModel.searchSample(metadata)
             } catch (e: Exception) {
                 viewModel.setSearchError(e.message ?: "无法读取所选图片")
@@ -191,21 +191,14 @@ fun SearchScreen(
                                         text = stringResource(R.string.match_by_filename),
                                         checked = matchByFilename,
                                         onCheckedChange = { checked: Boolean ->
-                                            viewModel.setMatchOptions(checked, matchBySize, matchByDimensions)
+                                            viewModel.setMatchOptions(checked, matchBySize)
                                         }
                                     )
                                     RuleCheckBox(
                                         text = stringResource(R.string.match_by_size),
                                         checked = matchBySize,
                                         onCheckedChange = { checked: Boolean ->
-                                            viewModel.setMatchOptions(matchByFilename, checked, matchByDimensions)
-                                        }
-                                    )
-                                    RuleCheckBox(
-                                        text = stringResource(R.string.match_by_dimensions),
-                                        checked = matchByDimensions,
-                                        onCheckedChange = { checked: Boolean ->
-                                            viewModel.setMatchOptions(matchByFilename, matchBySize, checked)
+                                            viewModel.setMatchOptions(matchByFilename, checked)
                                         }
                                     )
                                 }
@@ -332,49 +325,3 @@ private fun RuleCheckBox(
     }
 }
 
-private fun uriToImageMetadata(context: android.content.Context, uri: Uri): ImageMetadata {
-    var path = uri.toString()
-    var displayName = uri.lastPathSegment ?: "unknown"
-    var size = 0L
-    var width = 0
-    var height = 0
-    var mimeType = "image/*"
-
-    try {
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val displayNameIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.DISPLAY_NAME)
-                    .takeIf { it >= 0 }
-                    ?: cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                val sizeIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.SIZE)
-                    .takeIf { it >= 0 }
-                    ?: cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
-                val widthIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.WIDTH)
-                val heightIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.HEIGHT)
-                val mimeIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.MIME_TYPE)
-                val dataIdx = cursor.getColumnIndex(android.provider.MediaStore.Images.Media.DATA)
-
-                if (displayNameIdx >= 0) displayName = cursor.getString(displayNameIdx) ?: displayName
-                if (sizeIdx >= 0) size = cursor.getLong(sizeIdx)
-                if (widthIdx >= 0) width = cursor.getInt(widthIdx)
-                if (heightIdx >= 0) height = cursor.getInt(heightIdx)
-                if (mimeIdx >= 0) mimeType = cursor.getString(mimeIdx) ?: mimeType
-                if (dataIdx >= 0) path = cursor.getString(dataIdx) ?: path
-            }
-        }
-    } catch (_: Exception) {
-        // 保持默认值，避免崩溃
-    }
-
-    return ImageMetadata(
-        id = System.currentTimeMillis(),
-        uri = uri,
-        path = path,
-        displayName = displayName,
-        sizeBytes = size,
-        dateAdded = System.currentTimeMillis(),
-        width = width,
-        height = height,
-        mimeType = mimeType
-    )
-}

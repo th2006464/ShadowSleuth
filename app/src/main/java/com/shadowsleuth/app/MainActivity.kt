@@ -5,20 +5,33 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -42,11 +55,8 @@ class MainActivity : ComponentActivity() {
 
     private val permissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val readGranted = permissions[ScanViewModel.getRequiredPermission()] ?: false
-        if (readGranted) {
-            viewModel.startScan()
-        }
+    ) { _ ->
+        // 用户授权后不会自动扫描，需点击主页「开始扫描」按钮手动触发
     }
 
     private val deletePermissionLauncher = registerForActivityResult(
@@ -101,6 +111,8 @@ private fun MainApp(
     val bottomBarItems = listOf(Screen.Scan, Screen.Results, Screen.Search)
     val showBottomBar = currentRoute in bottomBarItems.map { it.route }
 
+    var showInfoDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
@@ -154,7 +166,8 @@ private fun MainApp(
                 ScanScreen(
                     viewModel = viewModel,
                     onRequestPermission = onRequestPermission,
-                    onNavigate = { navController.navigate(it.route) }
+                    onNavigate = { navController.navigate(it.route) },
+                    onInfoClick = { showInfoDialog = true }
                 )
             }
             composable(Screen.Results.route) {
@@ -190,4 +203,68 @@ private fun MainApp(
             }
         }
     }
+
+    if (showInfoDialog) {
+        InfoDialog(onDismiss = { showInfoDialog = false })
+    }
+}
+
+@Composable
+private fun InfoDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("关于双影密探") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = "双影密探（ShadowSleuth）是一款纯本地、离线、无网络上传的 Android 重复图片查找工具。",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "项目发布与更新：",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "https://github.com/th2006464/ShadowSleuth",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "联系我们：",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "微信：Fox_Tang",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "版权与声明：",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "· 本应用不会上传、分析或删除您的图片，所有操作均在本地完成。\n" +
+                            "· 应用图标、界面及代码均受版权保护，未经授权禁止转载或商用。\n" +
+                            "· 使用本应用即表示您同意自行承担操作风险，建议删除前再次确认。\n" +
+                            "· 如有侵权或违规内容，请联系我们处理。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.got_it))
+            }
+        }
+    )
 }

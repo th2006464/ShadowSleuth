@@ -15,7 +15,6 @@
     <string name="ignore_small_images">忽略小图</string>
     <string name="match_by_filename">按文件名匹配</string>
     <string name="match_by_size">按文件大小匹配</string>
-    <string name="match_by_dimensions">按分辨率匹配</string>
     <string name="sample_image">样本图片</string>
     <string name="select_image">选择图片</string>
     <string name="search_matches">匹配结果</string>
@@ -29,7 +28,6 @@
     <string name="match_type">匹配方式</string>
     <string name="filename_match">文件名相同</string>
     <string name="size_match">文件大小相同</string>
-    <string name="dimensions_match">分辨率相同</string>
     <string name="view_details">详细信息</string>
     <string name="delete_image">删除图片</string>
     <string name="delete_confirm_message">确定要删除「%1$s」吗？删除后无法恢复。</string>
@@ -38,4 +36,6 @@
     <string name="image_details">图片详情</string>
     <string name="format">格式</string>
     <string name="name">名称</string>
+    <string name="got_it">知道了</string>
+    <string name="about">关于</string>
 </resources>

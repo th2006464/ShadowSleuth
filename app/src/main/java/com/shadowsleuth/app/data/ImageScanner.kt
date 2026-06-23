@@ -108,5 +108,55 @@ class ImageScanner(private val context: Context) {
 
     companion object {
         const val DEFAULT_MIN_SIZE = 50 * 1024L // 50KB
+
+        /**
+         * 将用户从相册选择的 URI 转换为 ImageMetadata
+         */
+        fun uriToImageMetadata(context: Context, uri: Uri): ImageMetadata {
+            var path = uri.toString()
+            var displayName = uri.lastPathSegment ?: "unknown"
+            var size = 0L
+            var width = 0
+            var height = 0
+            var mimeType = "image/*"
+
+            try {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val displayNameIdx = cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME)
+                            .takeIf { it >= 0 }
+                            ?: cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        val sizeIdx = cursor.getColumnIndex(MediaStore.Images.Media.SIZE)
+                            .takeIf { it >= 0 }
+                            ?: cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                        val widthIdx = cursor.getColumnIndex(MediaStore.Images.Media.WIDTH)
+                        val heightIdx = cursor.getColumnIndex(MediaStore.Images.Media.HEIGHT)
+                        val mimeIdx = cursor.getColumnIndex(MediaStore.Images.Media.MIME_TYPE)
+                        val dataIdx = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
+
+                        if (displayNameIdx >= 0) displayName = cursor.getString(displayNameIdx) ?: displayName
+                        if (sizeIdx >= 0) size = cursor.getLong(sizeIdx)
+                        if (widthIdx >= 0) width = cursor.getInt(widthIdx)
+                        if (heightIdx >= 0) height = cursor.getInt(heightIdx)
+                        if (mimeIdx >= 0) mimeType = cursor.getString(mimeIdx) ?: mimeType
+                        if (dataIdx >= 0) path = cursor.getString(dataIdx) ?: path
+                    }
+                }
+            } catch (_: Exception) {
+                // 保持默认值，避免崩溃
+            }
+
+            return ImageMetadata(
+                id = System.currentTimeMillis(),
+                uri = uri,
+                path = path,
+                displayName = displayName,
+                sizeBytes = size,
+                dateAdded = System.currentTimeMillis(),
+                width = width,
+                height = height,
+                mimeType = mimeType
+            )
+        }
     }
 }

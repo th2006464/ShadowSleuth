@@ -10,21 +10,18 @@ data class DuplicateGroup(
 ) {
     enum class MatchType {
         FILENAME,
-        SIZE,
-        DIMENSIONS
+        SIZE
     }
 
     val title: String
         get() = when (matchType) {
             MatchType.FILENAME -> images.firstOrNull()?.displayName ?: "未知文件"
             MatchType.SIZE -> images.firstOrNull()?.formattedSize ?: "未知大小"
-            MatchType.DIMENSIONS -> images.firstOrNull()?.formattedDimensions ?: "未知尺寸"
         }
 
     val subtitle: String
         get() = when (matchType) {
             MatchType.FILENAME -> "文件名相同 · ${images.size} 张"
             MatchType.SIZE -> "文件大小相同 · ${images.size} 张"
-            MatchType.DIMENSIONS -> "分辨率相同 · ${images.size} 张"
         }
 }

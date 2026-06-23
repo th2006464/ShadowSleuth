@@ -1,5 +1,9 @@
 package com.shadowsleuth.app.ui.scan
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,6 +32,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -36,6 +43,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,27 +55,67 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.shadowsleuth.app.R
+import com.shadowsleuth.app.data.ExifReader
+import com.shadowsleuth.app.data.ImageScanner
+import com.shadowsleuth.app.data.model.ExifInfo
+import com.shadowsleuth.app.data.model.ImageMetadata
+import com.shadowsleuth.app.ui.components.ExifDetailDialog
 import com.shadowsleuth.app.ui.navigation.Screen
 import com.shadowsleuth.app.viewmodel.ScanState
 import com.shadowsleuth.app.viewmodel.ScanViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanScreen(
     viewModel: ScanViewModel,
     onRequestPermission: (String) -> Unit,
-    onNavigate: (Screen) -> Unit
+    onNavigate: (Screen) -> Unit,
+    onInfoClick: () -> Unit = {}
 ) {
     val state by viewModel.scanState.collectAsState()
     val minSizeKb by viewModel.minSizeKb.collectAsState()
     val matchByFilename by viewModel.matchByFilename.collectAsState()
     val matchBySize by viewModel.matchBySize.collectAsState()
-    val matchByDimensions by viewModel.matchByDimensions.collectAsState()
     val context = LocalContext.current
+
+    var selectedExifImage by remember { mutableStateOf<ImageMetadata?>(null) }
+    var exifInfo by remember { mutableStateOf<ExifInfo?>(null) }
+    var showExifDialog by remember { mutableStateOf(false) }
+
+    val pickImageForExif = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val metadata = ImageScanner.uriToImageMetadata(context, it)
+                    val info = ExifReader.read(context, metadata)
+                    withContext(Dispatchers.Main) {
+                        selectedExifImage = metadata
+                        exifInfo = info
+                        showExifDialog = true
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
 
     val startScanAction = {
         if (ScanViewModel.hasPermission(context)) {
             viewModel.startScan()
+        } else {
+            onRequestPermission(ScanViewModel.getRequiredPermission())
+        }
+    }
+
+    val viewDetailsAction = {
+        if (ScanViewModel.hasPermission(context)) {
+            pickImageForExif.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         } else {
             onRequestPermission(ScanViewModel.getRequiredPermission())
         }
@@ -79,6 +129,14 @@ fun ScanScreen(
                         text = stringResource(R.string.app_name),
                         style = MaterialTheme.typography.titleLarge
                     )
+                },
+                actions = {
+                    IconButton(onClick = onInfoClick) {
+                        Icon(
+                            imageVector = Icons.Filled.Info,
+                            contentDescription = "关于"
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -119,21 +177,14 @@ fun ScanScreen(
                         text = stringResource(R.string.match_by_filename),
                         checked = matchByFilename,
                         onCheckedChange = { checked ->
-                            viewModel.setMatchOptions(checked, matchBySize, matchByDimensions)
+                            viewModel.setMatchOptions(checked, matchBySize)
                         }
                     )
                     RuleCheckBox(
                         text = stringResource(R.string.match_by_size),
                         checked = matchBySize,
                         onCheckedChange = { checked ->
-                            viewModel.setMatchOptions(matchByFilename, checked, matchByDimensions)
-                        }
-                    )
-                    RuleCheckBox(
-                        text = stringResource(R.string.match_by_dimensions),
-                        checked = matchByDimensions,
-                        onCheckedChange = { checked ->
-                            viewModel.setMatchOptions(matchByFilename, matchBySize, checked)
+                            viewModel.setMatchOptions(matchByFilename, checked)
                         }
                     )
                 }
@@ -177,7 +228,7 @@ fun ScanScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Action button
+            // Action buttons
             when (state) {
                 is ScanState.Scanning -> {
                     Box(
@@ -217,22 +268,54 @@ fun ScanScreen(
                     }
                 }
                 else -> {
-                    Button(
-                        onClick = startScanAction,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.AutoFixHigh,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.start_scan))
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = startScanAction,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.AutoFixHigh,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.start_scan))
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = viewDetailsAction,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Visibility,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("查看图片详细信息")
+                        }
                     }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    if (showExifDialog && selectedExifImage != null && exifInfo != null) {
+        ExifDetailDialog(
+            exifInfo = exifInfo!!,
+            imageUri = selectedExifImage!!.uri,
+            displayName = selectedExifImage!!.displayName,
+            onDismiss = {
+                showExifDialog = false
+                selectedExifImage = null
+                exifInfo = null
+            }
+        )
     }
 }
 
