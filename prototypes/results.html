@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <title>双影密探 ShadowSleuth - 扫描结果</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="shared/tailwind-config.js"></script>
+    <link rel="stylesheet" href="shared/styles.css"/>
+</head>
+<body class="bg-surface text-on-surface antialiased font-body-md h-screen w-screen overflow-hidden flex flex-col pt-safe-top pb-safe selection:bg-primary-container selection:text-on-primary-container">
+    <!-- TopAppBar -->
+    <header class="bg-surface docked full-width top-0 z-40 flex justify-between items-center w-full px-edge-margin h-14 shrink-0">
+        <a href="scan.html" class="text-on-surface-variant hover:bg-surface-container-highest rounded-full p-2 transition-colors flex items-center justify-center">
+            <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+        </a>
+        <h1 class="font-headline-sm text-headline-sm font-semibold text-on-surface">扫描结果</h1>
+        <button class="text-on-surface-variant hover:bg-surface-container-highest rounded-full p-2 transition-colors flex items-center justify-center">
+            <span class="material-symbols-outlined text-[24px]">filter_list</span>
+        </button>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto w-full max-w-md mx-auto px-edge-margin pb-24 space-y-md no-scrollbar relative">
+        <!-- Summary Card -->
+        <div class="card p-md space-y-sm">
+            <div class="flex items-center justify-between">
+                <h2 class="font-body-lg text-body-lg font-medium text-on-surface">扫描摘要</h2>
+                <span class="px-2 py-1 rounded-full bg-primary-container text-on-primary text-label-md font-medium">已完成</span>
+            </div>
+            <div class="grid grid-cols-3 gap-sm pt-2">
+                <div class="text-center">
+                    <div class="font-display-lg text-display-lg text-primary">12</div>
+                    <div class="font-label-md text-label-md text-on-surface-variant">重复组</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-display-lg text-display-lg text-primary">36</div>
+                    <div class="font-label-md text-label-md text-on-surface-variant">重复文件</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-display-lg text-display-lg text-primary">128</div>
+                    <div class="font-label-md text-label-md text-on-surface-variant">MB 可节省</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Duplicate Group 1 -->
+        <div class="card p-md space-y-sm">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-sm">
+                    <span class="material-symbols-outlined text-primary">folder_copy</span>
+                    <span class="font-body-lg text-body-lg font-medium text-on-surface">分组 1</span>
+                </div>
+                <span class="px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-md font-medium">文件名匹配</span>
+            </div>
+            <div class="grid grid-cols-2 gap-grid-gutter">
+                <a href="preview.html" class="block relative rounded-lg overflow-hidden aspect-square bg-surface-container">
+                    <img src="https://via.placeholder.com/300x300/0d47a1/ffffff?text=IMG_001" alt="重复图1" class="w-full h-full object-cover"/>
+                    <div class="absolute top-2 right-2 px-2 py-1 rounded bg-inverse-surface text-inverse-on-surface font-label-md text-label-md">2.4 MB</div>
+                </a>
+                <a href="preview.html" class="block relative rounded-lg overflow-hidden aspect-square bg-surface-container">
+                    <img src="https://via.placeholder.com/300x300/486173/ffffff?text=IMG_001" alt="重复图2" class="w-full h-full object-cover"/>
+                    <div class="absolute top-2 right-2 px-2 py-1 rounded bg-inverse-surface text-inverse-on-surface font-label-md text-label-md">2.4 MB</div>
+                </a>
+            </div>
+            <div class="space-y-xs pt-2">
+                <div class="flex items-start gap-sm">
+                    <span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+                    <span class="font-label-md text-label-md text-on-surface-variant font-mono">2024-06-20 14:32:18</span>
+                </div>
+                <div class="flex items-start gap-sm">
+                    <span class="material-symbols-outlined text-[16px] text-outline">folder</span>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant font-mono truncate">/storage/emulated/0/DCIM/Camera/IMG_001.jpg</span>
+                </div>
+                <div class="flex items-start gap-sm">
+                    <span class="material-symbols-outlined text-[16px] text-outline">aspect_ratio</span>
+                    <span class="font-label-md text-label-md text-on-surface-variant font-mono">3024 × 4032</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Duplicate Group 2 -->
+        <div class="card p-md space-y-sm">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-sm">
+                    <span class="material-symbols-outlined text-primary">folder_copy</span>
+                    <span class="font-body-lg text-body-lg font-medium text-on-surface">分组 2</span>
+                </div>
+                <span class="px-2 py-1 rounded-full bg-tertiary-container text-on-tertiary-container text-label-md font-medium">文件大小匹配</span>
+            </div>
+            <div class="grid grid-cols-2 gap-grid-gutter">
+                <a href="preview.html" class="block relative rounded-lg overflow-hidden aspect-square bg-surface-container">
+                    <img src="https://via.placeholder.com/300x300/003b43/ffffff?text=Screenshot" alt="重复图1" class="w-full h-full object-cover"/>
+                    <div class="absolute top-2 right-2 px-2 py-1 rounded bg-inverse-surface text-inverse-on-surface font-label-md text-label-md">1.1 MB</div>
+                </a>
+                <a href="preview.html" class="block relative rounded-lg overflow-hidden aspect-square bg-surface-container">
+                    <img src="https://via.placeholder.com/300x300/737783/ffffff?text=Screenshot" alt="重复图2" class="w-full h-full object-cover"/>
+                    <div class="absolute top-2 right-2 px-2 py-1 rounded bg-inverse-surface text-inverse-on-surface font-label-md text-label-md">1.1 MB</div>
+                </a>
+            </div>
+            <div class="space-y-xs pt-2">
+                <div class="flex items-start gap-sm">
+                    <span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+                    <span class="font-label-md text-label-md text-on-surface-variant font-mono">2024-06-18 09:15:42</span>
+                </div>
+                <div class="flex items-start gap-sm">
+                    <span class="material-symbols-outlined text-[16px] text-outline">folder</span>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant font-mono truncate">/storage/emulated/0/Pictures/Screenshots/Screenshot_001.png</span>
+                </div>
+                <div class="flex items-start gap-sm">
+                    <span class="material-symbols-outlined text-[16px] text-outline">aspect_ratio</span>
+                    <span class="font-label-md text-label-md text-on-surface-variant font-mono">1080 × 2340</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State (hidden by default) -->
+        <div class="hidden flex-col items-center justify-center py-16 text-center">
+            <span class="material-symbols-outlined text-[64px] text-outline mb-4">check_circle</span>
+            <h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">未发现重复图片</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant mb-6">您的相册非常整洁</p>
+            <a href="scan.html" class="inline-flex items-center px-6 py-3 rounded-xl bg-primary text-on-primary font-body-lg text-body-lg font-medium">
+                <span class="material-symbols-outlined mr-2">refresh</span>
+                重新扫描
+            </a>
+        </div>
+    </main>
+
+    <!-- BottomNavBar -->
+    <nav class="bg-surface-container docked full-width bottom-0 rounded-t-xl shadow-md fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 pb-safe">
+        <a href="scan.html" class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1 hover:bg-surface-container-highest rounded-full transition-colors">
+            <span class="material-symbols-outlined text-[24px] mb-1">radar</span>
+            <span class="font-label-md text-label-md">Scan</span>
+        </a>
+        <a href="results.html" class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-5 py-1 transition-all duration-200">
+            <span class="material-symbols-outlined fill text-[24px] mb-1">history</span>
+            <span class="font-label-md text-label-md">Results</span>
+        </a>
+        <a href="search.html" class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1 hover:bg-surface-container-highest rounded-full transition-colors">
+            <span class="material-symbols-outlined text-[24px] mb-1">image_search</span>
+            <span class="font-label-md text-label-md">Search</span>
+        </a>
+    </nav>
+</body>
+</html>

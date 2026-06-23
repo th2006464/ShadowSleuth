@@ -1,0 +1,40 @@
+# Android build artifacts
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+build/
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+local.properties
+proguard/
+*.iml
+
+# Android Studio / IntelliJ
+.idea/
+*.iws
+*.ipr
+.navigation/
+captures/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# WorkBuddy local workspace state
+.workbuddy/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp

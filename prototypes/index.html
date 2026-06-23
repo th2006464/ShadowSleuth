@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <title>双影密探 ShadowSleuth - 原型导航</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="shared/tailwind-config.js"></script>
+    <link rel="stylesheet" href="shared/styles.css"/>
+</head>
+<body class="bg-surface text-on-surface antialiased font-body-md h-screen w-screen overflow-hidden flex flex-col pt-safe-top pb-safe selection:bg-primary-container selection:text-on-primary-container">
+    <!-- TopAppBar -->
+    <header class="bg-surface docked full-width top-0 z-40 flex justify-center items-center w-full px-edge-margin h-14 shrink-0">
+        <h1 class="font-headline-sm text-headline-sm font-semibold text-on-surface">双影密探 ShadowSleuth 原型</h1>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto w-full max-w-md mx-auto px-edge-margin pb-8 space-y-md no-scrollbar relative">
+        <div class="animate-fade-in-up">
+            <p class="font-body-md text-body-md text-on-surface-variant mb-4">
+                以下是 <strong>双影密探 ShadowSleuth</strong> Android APP 的交互原型页面，点击卡片可进入对应页面预览。
+            </p>
+
+            <p class="font-body-md text-body-md text-on-surface-variant mb-4">
+                GitHub 仓库：<a href="https://github.com/th2006464/ShadowSleuth.git" class="text-primary underline" target="_blank">https://github.com/th2006464/ShadowSleuth.git</a>
+            </p>
+
+            <!-- Scan -->
+            <a href="scan.html" class="card p-md mb-md flex items-center gap-md hover:shadow-md transition-shadow block">
+                <div class="w-14 h-14 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[28px] text-on-primary-container">radar</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h2 class="font-body-lg text-body-lg font-medium text-on-surface">扫描页</h2>
+                    <p class="font-body-md text-body-md text-on-surface-variant truncate">选择匹配规则、设置忽略小图阈值、开始扫描</p>
+                </div>
+                <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+            </a>
+
+            <!-- Results -->
+            <a href="results.html" class="card p-md mb-md flex items-center gap-md hover:shadow-md transition-shadow block">
+                <div class="w-14 h-14 rounded-xl bg-secondary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[28px] text-on-secondary-container">history</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h2 class="font-body-lg text-body-lg font-medium text-on-surface">结果页</h2>
+                    <p class="font-body-md text-body-md text-on-surface-variant truncate">分组展示重复图片、并排缩略图对比、元数据</p>
+                </div>
+                <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+            </a>
+
+            <!-- Search -->
+            <a href="search.html" class="card p-md mb-md flex items-center gap-md hover:shadow-md transition-shadow block">
+                <div class="w-14 h-14 rounded-xl bg-tertiary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[28px] text-on-tertiary-container">image_search</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h2 class="font-body-lg text-body-lg font-medium text-on-surface">搜索页</h2>
+                    <p class="font-body-md text-body-md text-on-surface-variant truncate">选择样本图、按规则定向检索重复图片</p>
+                </div>
+                <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+            </a>
+
+            <!-- Preview -->
+            <a href="preview.html" class="card p-md mb-md flex items-center gap-md hover:shadow-md transition-shadow block">
+                <div class="w-14 h-14 rounded-xl bg-surface-variant flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[28px] text-on-surface">fullscreen</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h2 class="font-body-lg text-body-lg font-medium text-on-surface">预览页</h2>
+                    <p class="font-body-md text-body-md text-on-surface-variant truncate">全屏原图查看、底部信息抽屉、左右切换</p>
+                </div>
+                <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+            </a>
+
+            <!-- Docs Link -->
+            <a href="../docs/index.md" class="block mt-6 p-4 rounded-xl bg-primary-container text-on-primary-container text-center font-body-lg text-body-lg font-medium hover:bg-primary transition-colors hover:text-on-primary">
+                查看项目文档
+            </a>
+        </div>
+    </main>
+</body>
+</html>

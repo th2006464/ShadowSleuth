@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>LensClean - 智能清理</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-container": "#4d6678",
+                        "surface-dim": "#d8dadd",
+                        "inverse-on-surface": "#eff1f4",
+                        "on-tertiary-fixed": "#001f24",
+                        "surface": "#f7f9fc",
+                        "on-secondary-fixed-variant": "#314a5b",
+                        "on-surface-variant": "#434652",
+                        "surface-container-highest": "#e0e3e6",
+                        "secondary-container": "#c9e3f9",
+                        "outline": "#737783",
+                        "on-tertiary-container": "#7bc8d5",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e6e8eb",
+                        "primary-container": "#0d47a1",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#00429c",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#b0c6ff",
+                        "surface-container": "#eceef1",
+                        "on-secondary-fixed": "#011e2e",
+                        "surface-container-low": "#f2f4f7",
+                        "inverse-primary": "#b0c6ff",
+                        "on-tertiary-fixed-variant": "#004f58",
+                        "secondary-fixed-dim": "#b0cadf",
+                        "primary-fixed": "#d9e2ff",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed": "#cbe6fb",
+                        "inverse-surface": "#2d3133",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#191c1e",
+                        "surface-tint": "#2b5bb5",
+                        "surface-bright": "#f7f9fc",
+                        "tertiary": "#003b43",
+                        "error": "#ba1a1a",
+                        "secondary": "#486173",
+                        "primary": "#003178",
+                        "on-background": "#191c1e",
+                        "tertiary-container": "#00545e",
+                        "on-primary-container": "#a1bbff",
+                        "on-primary-fixed": "#001945",
+                        "background": "#f7f9fc",
+                        "tertiary-fixed": "#a2effd",
+                        "tertiary-fixed-dim": "#85d2e0",
+                        "outline-variant": "#c3c6d4",
+                        "surface-variant": "#e0e3e6"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "xs": "4px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "edge-margin": "16px",
+                        "sm": "8px",
+                        "xl": "32px",
+                        "grid-gutter": "12px",
+                        "safe": "env(safe-area-inset-bottom, 24px)",
+                        "safe-top": "env(safe-area-inset-top, 44px)"
+                    },
+                    fontFamily: {
+                        "label-sm": ["JetBrains Mono", "monospace"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-md-mobile": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "display-lg": ["Inter", "sans-serif"],
+                        "headline-sm": ["Inter", "sans-serif"],
+                        "headline-md": ["Inter", "sans-serif"],
+                        "label-md": ["JetBrains Mono", "monospace"]
+                    },
+                    fontSize: {
+                        "label-sm": ["10px", { lineHeight: "14px", fontWeight: "500" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "headline-md-mobile": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.5px", fontWeight: "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Smooth scrolling and basic reset */
+        html { scroll-behavior: smooth; }
+        body { 
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none; /* Prevent pull-to-refresh bounce on Android if possible */
+        }
+        
+        /* Hide scrollbar for clean UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased font-body-md h-screen w-screen overflow-hidden flex flex-col pt-safe-top pb-safe selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-surface docked full-width top-0 z-40 flex justify-between items-center w-full px-edge-margin h-14 shrink-0">
+<button class="text-on-surface-variant hover:bg-surface-container-highest rounded-full p-2 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">grid_view</span>
+</button>
+<h1 class="font-headline-md-mobile text-headline-md-mobile font-bold text-primary tracking-tight">LensClean</h1>
+<button class="text-on-surface-variant hover:bg-surface-container-highest rounded-full p-2 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</button>
+</header>
+<!-- Main Canvas Area -->
+<main class="flex-1 overflow-y-auto w-full max-w-md mx-auto px-edge-margin pb-24 space-y-lg no-scrollbar relative">
+<!-- Screen 1: Scan Dashboard Concept -->
+<div class="space-y-md animate-fade-in-up">
+<div class="flex items-center justify-between mb-sm">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">相册扫描</h2>
+</div>
+<!-- Bento Grid Layout for Controls -->
+<div class="grid grid-cols-2 gap-grid-gutter">
+<!-- Matching Rules Card -->
+<div class="col-span-2 bg-white rounded-xl p-md border border-surface-container-highest shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary-container rounded-full blur-3xl opacity-30 -mr-10 -mt-10 pointer-events-none"></div>
+<div class="flex items-center mb-sm">
+<span class="material-symbols-outlined text-primary mr-sm">rule_folder</span>
+<h3 class="font-body-lg text-body-lg font-medium text-on-surface">匹配规则</h3>
+</div>
+<div class="flex flex-wrap gap-sm mt-md">
+<span class="inline-flex items-center px-3 py-1.5 rounded-full bg-primary-container text-on-primary text-body-md font-medium">
+<span class="material-symbols-outlined text-[16px] mr-1">check_circle</span>
+                            文件名匹配
+                        </span>
+<span class="inline-flex items-center px-3 py-1.5 rounded-full bg-primary-container text-on-primary text-body-md font-medium">
+<span class="material-symbols-outlined text-[16px] mr-1">check_circle</span>
+                            文件大小匹配
+                        </span>
+<span class="inline-flex items-center px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant text-body-md border border-outline-variant hover:bg-surface-container-highest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[16px] mr-1">add</span>
+                            添加规则
+                        </span>
+</div>
+</div>
+<!-- Filter Card -->
+<div class="col-span-2 bg-white rounded-xl p-md border border-surface-container-highest shadow-sm">
+<div class="flex justify-between items-center mb-sm">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-on-surface-variant mr-sm">filter_alt</span>
+<h3 class="font-body-lg text-body-lg font-medium text-on-surface">忽略小图</h3>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container px-2 py-1 rounded text-on-surface-variant font-mono">50 KB</span>
+</div>
+<div class="mt-lg relative">
+<div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-1/4 rounded-full"></div>
+</div>
+<div class="absolute top-1/2 -mt-2.5 left-1/4 -ml-2.5 w-5 h-5 bg-white border-2 border-primary rounded-full shadow-sm cursor-pointer transform hover:scale-110 transition-transform"></div>
+</div>
+<div class="flex justify-between mt-sm">
+<span class="font-label-sm text-label-sm text-outline">0 KB</span>
+<span class="font-label-sm text-label-sm text-outline">500 KB</span>
+</div>
+</div>
+</div>
+<!-- Passive Progress State (Demonstration) -->
+<div class="bg-surface-container-low rounded-lg p-sm border border-surface-container-highest flex items-center justify-between mt-lg opacity-60">
+<div class="flex items-center overflow-hidden">
+<span class="material-symbols-outlined text-outline mr-sm animate-pulse">radar</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate font-mono">Ready to scan /storage/emulated/0/...</span>
+</div>
+</div>
+<!-- Primary Action -->
+<div class="mt-xl pb-md">
+<button class="w-full bg-primary text-on-primary py-4 rounded-xl font-headline-sm text-headline-sm font-semibold shadow-md hover:bg-primary-container active:scale-[0.98] transition-all flex justify-center items-center group relative overflow-hidden">
+<div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+<span class="material-symbols-outlined mr-sm group-hover:rotate-90 transition-transform duration-300">search</span>
+                    开始扫描
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container docked full-width bottom-0 rounded-t-xl shadow-md fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 pb-safe">
+<!-- Active Tab: Scan -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-5 py-1 Active: scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined fill text-[24px] mb-1">radar</span>
+<span class="font-label-md text-label-md">Scan</span>
+</a>
+<!-- Inactive Tab: Results -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1 hover:bg-surface-container-highest rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1">history</span>
+<span class="font-label-md text-label-md">Results</span>
+</a>
+<!-- Inactive Tab: Search -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1 hover:bg-surface-container-highest rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1">image_search</span>
+<span class="font-label-md text-label-md">Search</span>
+</a>
+</nav>
+<style>
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.4s ease-out forwards;
+        }
+    </style>
+</body></html>

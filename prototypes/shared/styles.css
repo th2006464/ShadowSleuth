@@ -1,0 +1,167 @@
+/* 双影密探 ShadowSleuth 共享样式表
+ * 基于 DESIGN.md 设计系统
+ */
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+/* CSS Variables (Design Tokens) */
+:root {
+    /* Surface */
+    --surface: #f7f9fc;
+    --surface-dim: #d8dadd;
+    --surface-bright: #f7f9fc;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f2f4f7;
+    --surface-container: #eceef1;
+    --surface-container-high: #e6e8eb;
+    --surface-container-highest: #e0e3e6;
+    --on-surface: #191c1e;
+    --on-surface-variant: #434652;
+    --inverse-surface: #2d3133;
+    --inverse-on-surface: #eff1f4;
+    --outline: #737783;
+    --outline-variant: #c3c6d4;
+    --surface-tint: #2b5bb5;
+    --surface-variant: #e0e3e6;
+
+    /* Primary */
+    --primary: #003178;
+    --on-primary: #ffffff;
+    --primary-container: #0d47a1;
+    --on-primary-container: #a1bbff;
+    --inverse-primary: #b0c6ff;
+
+    /* Secondary */
+    --secondary: #486173;
+    --on-secondary: #ffffff;
+    --secondary-container: #c9e3f9;
+    --on-secondary-container: #4d6678;
+
+    /* Tertiary */
+    --tertiary: #003b43;
+    --on-tertiary: #ffffff;
+    --tertiary-container: #00545e;
+    --on-tertiary-container: #7bc8d5;
+
+    /* Error */
+    --error: #ba1a1a;
+    --on-error: #ffffff;
+    --error-container: #ffdad6;
+    --on-error-container: #93000a;
+
+    /* Fixed colors */
+    --primary-fixed: #d9e2ff;
+    --primary-fixed-dim: #b0c6ff;
+    --on-primary-fixed: #001945;
+    --on-primary-fixed-variant: #00429c;
+    --secondary-fixed: #cbe6fb;
+    --secondary-fixed-dim: #b0cadf;
+    --on-secondary-fixed: #011e2e;
+    --on-secondary-fixed-variant: #314a5b;
+    --tertiary-fixed: #a2effd;
+    --tertiary-fixed-dim: #85d2e0;
+    --on-tertiary-fixed: #001f24;
+    --on-tertiary-fixed-variant: #004f58;
+
+    /* Background */
+    --background: #f7f9fc;
+    --on-background: #191c1e;
+}
+
+/* Material Symbols */
+.material-symbols-outlined {
+    font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24;
+}
+
+.material-symbols-outlined.fill {
+    font-variation-settings: 'FILL' 1;
+}
+
+/* Reset & Base */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Hide scrollbar for clean UI */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Glassmorphism utility */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.4s ease-out forwards;
+}
+
+/* Safe area helpers */
+.pt-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Technical data font */
+.font-mono-data {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Card base style */
+.card {
+    background: #ffffff;
+    border-radius: 1rem;
+    border: 1px solid var(--surface-container-highest);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Modal shadow */
+.shadow-modal {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Selection ring for thumbnails */
+.thumbnail-selected {
+    box-shadow: inset 0 0 0 3px var(--primary);
+}
+
+/* Bottom sheet panel */
+.bottom-sheet {
+    background: var(--surface-variant);
+    border-radius: 1.5rem 1.5rem 0 0;
+}

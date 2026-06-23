@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <title>双影密探 ShadowSleuth - 图片搜索</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="shared/tailwind-config.js"></script>
+    <link rel="stylesheet" href="shared/styles.css"/>
+</head>
+<body class="bg-surface text-on-surface antialiased font-body-md h-screen w-screen overflow-hidden flex flex-col pt-safe-top pb-safe selection:bg-primary-container selection:text-on-primary-container">
+    <!-- TopAppBar -->
+    <header class="bg-surface docked full-width top-0 z-40 flex justify-between items-center w-full px-edge-margin h-14 shrink-0">
+        <a href="scan.html" class="text-on-surface-variant hover:bg-surface-container-highest rounded-full p-2 transition-colors flex items-center justify-center">
+            <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+        </a>
+        <h1 class="font-headline-sm text-headline-sm font-semibold text-on-surface">图片搜索</h1>
+        <button class="text-on-surface-variant hover:bg-surface-container-highest rounded-full p-2 transition-colors flex items-center justify-center">
+            <span class="material-symbols-outlined text-[24px]">help</span>
+        </button>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto w-full max-w-md mx-auto px-edge-margin pb-24 space-y-md no-scrollbar relative">
+        <!-- Sample Selector -->
+        <div class="card p-md space-y-sm">
+            <div class="flex items-center gap-sm">
+                <span class="material-symbols-outlined text-primary">image_search</span>
+                <h2 class="font-body-lg text-body-lg font-medium text-on-surface">选择样本图</h2>
+            </div>
+            <div class="border-2 border-dashed border-outline rounded-xl p-6 flex flex-col items-center justify-center gap-sm bg-surface-container-low">
+                <span class="material-symbols-outlined text-[48px] text-outline">add_photo_alternate</span>
+                <p class="font-body-md text-body-md text-on-surface-variant text-center">从相册选择一张图片</p>
+                <p class="font-label-sm text-label-sm text-on-surface-variant text-center">支持 jpg / png / webp / heic</p>
+            </div>
+            <button class="w-full py-3 rounded-xl border border-primary text-primary font-body-lg text-body-lg font-medium hover:bg-primary-container hover:text-on-primary transition-colors flex justify-center items-center">
+                <span class="material-symbols-outlined mr-2">photo_library</span>
+                从相册选择
+            </button>
+        </div>
+
+        <!-- Search Configuration -->
+        <div class="card p-md space-y-sm">
+            <div class="flex items-center gap-sm">
+                <span class="material-symbols-outlined text-primary">tune</span>
+                <h2 class="font-body-lg text-body-lg font-medium text-on-surface">匹配规则</h2>
+            </div>
+            <div class="space-y-xs">
+                <label class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low">
+                    <span class="font-body-md text-body-md text-on-surface">按文件名匹配</span>
+                    <div class="w-12 h-6 rounded-full bg-primary relative cursor-pointer">
+                        <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                    </div>
+                </label>
+                <label class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low">
+                    <span class="font-body-md text-body-md text-on-surface">按文件大小匹配</span>
+                    <div class="w-12 h-6 rounded-full bg-primary relative cursor-pointer">
+                        <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Search Button -->
+        <div class="pt-2">
+            <a href="results.html" class="block w-full bg-primary text-on-primary py-4 rounded-xl font-headline-sm text-headline-sm font-semibold shadow-md hover:bg-primary-container active:scale-[0.98] transition-all text-center flex justify-center items-center">
+                <span class="material-symbols-outlined mr-2">search</span>
+                开始搜索
+            </a>
+        </div>
+
+        <!-- Recent Searches -->
+        <div class="card p-md space-y-sm">
+            <h2 class="font-body-lg text-body-lg font-medium text-on-surface">最近搜索</h2>
+            <div class="space-y-xs">
+                <div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low">
+                    <div class="flex items-center gap-sm">
+                        <span class="material-symbols-outlined text-on-surface-variant">history</span>
+                        <span class="font-body-md text-body-md text-on-surface">IMG_2024_001.jpg</span>
+                    </div>
+                    <span class="font-label-md text-label-md text-on-surface-variant">3 个结果</span>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low">
+                    <div class="flex items-center gap-sm">
+                        <span class="material-symbols-outlined text-on-surface-variant">history</span>
+                        <span class="font-body-md text-body-md text-on-surface">Screenshot_0618.png</span>
+                    </div>
+                    <span class="font-label-md text-label-md text-on-surface-variant">2 个结果</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- BottomNavBar -->
+    <nav class="bg-surface-container docked full-width bottom-0 rounded-t-xl shadow-md fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 pb-safe">
+        <a href="scan.html" class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1 hover:bg-surface-container-highest rounded-full transition-colors">
+            <span class="material-symbols-outlined text-[24px] mb-1">radar</span>
+            <span class="font-label-md text-label-md">Scan</span>
+        </a>
+        <a href="results.html" class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1 hover:bg-surface-container-highest rounded-full transition-colors">
+            <span class="material-symbols-outlined text-[24px] mb-1">history</span>
+            <span class="font-label-md text-label-md">Results</span>
+        </a>
+        <a href="search.html" class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-5 py-1 transition-all duration-200">
+            <span class="material-symbols-outlined fill text-[24px] mb-1">image_search</span>
+            <span class="font-label-md text-label-md">Search</span>
+        </a>
+    </nav>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <title>双影密探 ShadowSleuth - 图片预览</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="shared/tailwind-config.js"></script>
+    <link rel="stylesheet" href="shared/styles.css"/>
+</head>
+<body class="bg-black text-inverse-on-surface h-screen w-screen overflow-hidden flex flex-col relative">
+    <!-- Top Overlay Bar -->
+    <header class="absolute top-0 left-0 right-0 z-40 flex justify-between items-center px-edge-margin pt-safe-top h-14 bg-gradient-to-b from-black/80 to-transparent">
+        <a href="results.html" class="text-inverse-on-surface hover:bg-white/10 rounded-full p-2 transition-colors flex items-center justify-center">
+            <span class="material-symbols-outlined text-[24px]">close</span>
+        </a>
+        <div class="font-label-md text-label-md font-mono">2 / 5</div>
+        <button class="text-inverse-on-surface hover:bg-white/10 rounded-full p-2 transition-colors flex items-center justify-center" onclick="document.getElementById('info-panel').classList.toggle('translate-y-full')">
+            <span class="material-symbols-outlined text-[24px]">info</span>
+        </button>
+    </header>
+
+    <!-- Fullscreen Image Viewer -->
+    <main class="flex-1 flex items-center justify-center bg-black relative">
+        <img src="https://via.placeholder.com/1080x1440/0d47a1/ffffff?text=Preview" alt="预览图" class="max-w-full max-h-full object-contain"/>
+
+        <!-- Navigation Arrows -->
+        <a href="preview.html" class="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-inverse-on-surface hover:bg-black/60 transition-colors">
+            <span class="material-symbols-outlined text-[32px]">chevron_left</span>
+        </a>
+        <a href="preview.html" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-inverse-on-surface hover:bg-black/60 transition-colors">
+            <span class="material-symbols-outlined text-[32px]">chevron_right</span>
+        </a>
+    </main>
+
+    <!-- Bottom Info Panel -->
+    <div id="info-panel" class="absolute bottom-0 left-0 right-0 z-30 bottom-sheet p-md pb-safe transition-transform duration-300">
+        <div class="w-12 h-1 bg-outline rounded-full mx-auto mb-4"></div>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">图片信息</h2>
+            <button onclick="document.getElementById('info-panel').classList.add('translate-y-full')" class="text-on-surface-variant hover:bg-surface-container-high rounded-full p-1">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="space-y-sm">
+            <div class="flex items-start gap-sm">
+                <span class="material-symbols-outlined text-[20px] text-on-surface-variant">image</span>
+                <div>
+                    <p class="font-label-md text-label-md text-on-surface-variant">文件名</p>
+                    <p class="font-body-md text-body-md text-on-surface">IMG_2024_001.jpg</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-sm">
+                <span class="material-symbols-outlined text-[20px] text-on-surface-variant">save</span>
+                <div>
+                    <p class="font-label-md text-label-md text-on-surface-variant">文件大小</p>
+                    <p class="font-body-md text-body-md text-on-surface font-mono">2.4 MB</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-sm">
+                <span class="material-symbols-outlined text-[20px] text-on-surface-variant">schedule</span>
+                <div>
+                    <p class="font-label-md text-label-md text-on-surface-variant">创建时间</p>
+                    <p class="font-body-md text-body-md text-on-surface font-mono">2024-06-20 14:32:18</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-sm">
+                <span class="material-symbols-outlined text-[20px] text-on-surface-variant">folder</span>
+                <div>
+                    <p class="font-label-md text-label-md text-on-surface-variant">完整路径</p>
+                    <p class="font-label-sm text-label-sm text-on-surface font-mono break-all">/storage/emulated/0/DCIM/Camera/IMG_2024_001.jpg</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-sm">
+                <span class="material-symbols-outlined text-[20px] text-on-surface-variant">aspect_ratio</span>
+                <div>
+                    <p class="font-label-md text-label-md text-on-surface-variant">分辨率</p>
+                    <p class="font-body-md text-body-md text-on-surface font-mono">3024 × 4032</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-2 gap-sm mt-6">
+            <button class="py-3 rounded-xl bg-primary text-on-primary font-body-lg text-body-lg font-medium flex justify-center items-center">
+                <span class="material-symbols-outlined mr-2">photo_album</span>
+                在相册中查看
+            </button>
+            <button class="py-3 rounded-xl border border-outline text-on-surface font-body-lg text-body-lg font-medium flex justify-center items-center hover:bg-surface-container-high">
+                <span class="material-symbols-outlined mr-2">share</span>
+                分享
+            </button>
+        </div>
+    </div>
+</body>
+</html>
