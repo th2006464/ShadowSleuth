@@ -26,6 +26,7 @@
 | [architecture.md](architecture.md) | 技术架构、数据流、主题系统、权限模型与性能优化策略 |
 | [skills.md](skills.md) | 项目沉淀的可复用技能、工作流程与踩坑经验 |
 | [project-experience.md](project-experience.md) | 从 0 到 v1.0.8 的迭代经验、关键决策与后续方向 |
+| [shadowsleuth-android-skill.md](shadowsleuth-android-skill.md) | WorkBuddy 技能文档副本，可用于 AI 后续快速迭代 ShadowSleuth |
 
 ---
 
