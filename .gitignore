@@ -9,9 +9,12 @@ gen/
 out/
 build/
 .gradle/
-gradle/
-gradlew
-gradlew.bat
+# Keep Gradle wrapper files so the project is self-contained
+!gradle/wrapper/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!gradlew
+!gradlew.bat
 local.properties
 proguard/
 *.iml
