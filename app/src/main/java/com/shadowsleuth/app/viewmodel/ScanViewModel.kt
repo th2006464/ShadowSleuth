@@ -10,8 +10,11 @@ import com.shadowsleuth.app.data.DuplicateFinder
 import com.shadowsleuth.app.data.ImageScanner
 import com.shadowsleuth.app.data.model.DuplicateGroup
 import com.shadowsleuth.app.data.model.ImageMetadata
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -55,15 +58,22 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private val _matchBySize = MutableStateFlow(true)
     val matchBySize: StateFlow<Boolean> = _matchBySize.asStateFlow()
 
+    private val _matchByDimensions = MutableStateFlow(true)
+    val matchByDimensions: StateFlow<Boolean> = _matchByDimensions.asStateFlow()
+
+    private val _scrollToTopResults = MutableSharedFlow<Unit>()
+    val scrollToTopResults: SharedFlow<Unit> = _scrollToTopResults.asSharedFlow()
+
     private var allImages: List<ImageMetadata> = emptyList()
 
     fun setMinSize(kb: Int) {
         _minSizeKb.value = kb
     }
 
-    fun setMatchOptions(filename: Boolean, size: Boolean) {
+    fun setMatchOptions(filename: Boolean, size: Boolean, dimensions: Boolean) {
         _matchByFilename.value = filename
         _matchBySize.value = size
+        _matchByDimensions.value = dimensions
     }
 
     fun startScan() {
@@ -79,7 +89,8 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 val groups = finder.findDuplicates(
                     allImages,
                     matchByFilename = matchByFilename.value,
-                    matchBySize = matchBySize.value
+                    matchBySize = matchBySize.value,
+                    matchByDimensions = matchByDimensions.value
                 )
                 _scanState.value = ScanState.Complete(allImages, groups)
             } catch (e: Exception) {
@@ -98,12 +109,19 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     sample,
                     allImages,
                     matchByFilename = matchByFilename.value,
-                    matchBySize = matchBySize.value
+                    matchBySize = matchBySize.value,
+                    matchByDimensions = matchByDimensions.value
                 )
                 _searchState.value = SearchState.Ready(sample, groups)
             } catch (e: Exception) {
                 _searchState.value = SearchState.Error(e.message ?: "搜索失败")
             }
+        }
+    }
+
+    fun scrollToTopResults() {
+        viewModelScope.launch {
+            _scrollToTopResults.emit(Unit)
         }
     }
 

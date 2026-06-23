@@ -94,13 +94,18 @@ private fun MainApp(
                             label = { Text(label) },
                             selected = selected,
                             onClick = {
-                                if (!selected) {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.startDestinationId) {
-                                            saveState = true
+                                when {
+                                    selected && screen == Screen.Results -> {
+                                        viewModel.scrollToTopResults()
+                                    }
+                                    !selected -> {
+                                        navController.navigate(screen.route) {
+                                            popUpTo(Screen.Scan.route) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
                                     }
                                 }
                             }

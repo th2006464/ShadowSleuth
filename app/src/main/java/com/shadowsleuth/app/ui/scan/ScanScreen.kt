@@ -60,6 +60,7 @@ fun ScanScreen(
     val minSizeKb by viewModel.minSizeKb.collectAsState()
     val matchByFilename by viewModel.matchByFilename.collectAsState()
     val matchBySize by viewModel.matchBySize.collectAsState()
+    val matchByDimensions by viewModel.matchByDimensions.collectAsState()
     val context = LocalContext.current
 
     val startScanAction = {
@@ -118,14 +119,21 @@ fun ScanScreen(
                         text = stringResource(R.string.match_by_filename),
                         checked = matchByFilename,
                         onCheckedChange = { checked ->
-                            viewModel.setMatchOptions(checked, matchBySize)
+                            viewModel.setMatchOptions(checked, matchBySize, matchByDimensions)
                         }
                     )
                     RuleCheckBox(
                         text = stringResource(R.string.match_by_size),
                         checked = matchBySize,
                         onCheckedChange = { checked ->
-                            viewModel.setMatchOptions(matchByFilename, checked)
+                            viewModel.setMatchOptions(matchByFilename, checked, matchByDimensions)
+                        }
+                    )
+                    RuleCheckBox(
+                        text = stringResource(R.string.match_by_dimensions),
+                        checked = matchByDimensions,
+                        onCheckedChange = { checked ->
+                            viewModel.setMatchOptions(matchByFilename, matchBySize, checked)
                         }
                     )
                 }

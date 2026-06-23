@@ -8,18 +8,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +65,9 @@ fun SearchScreen(
     onBack: () -> Unit,
     onImageClick: (ImageMetadata) -> Unit
 ) {
+    val matchByFilename by viewModel.matchByFilename.collectAsState()
+    val matchBySize by viewModel.matchBySize.collectAsState()
+    val matchByDimensions by viewModel.matchByDimensions.collectAsState()
     val state = viewModel.searchState.collectAsState().value
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -166,6 +174,44 @@ fun SearchScreen(
                             ThumbnailImage(image = sample, size = 160)
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
+                                text = "匹配规则",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                shape = MaterialTheme.shapes.extraLarge
+                            ) {
+                                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                                    RuleCheckBox(
+                                        text = stringResource(R.string.match_by_filename),
+                                        checked = matchByFilename,
+                                        onCheckedChange = { checked: Boolean ->
+                                            viewModel.setMatchOptions(checked, matchBySize, matchByDimensions)
+                                        }
+                                    )
+                                    RuleCheckBox(
+                                        text = stringResource(R.string.match_by_size),
+                                        checked = matchBySize,
+                                        onCheckedChange = { checked: Boolean ->
+                                            viewModel.setMatchOptions(matchByFilename, checked, matchByDimensions)
+                                        }
+                                    )
+                                    RuleCheckBox(
+                                        text = stringResource(R.string.match_by_dimensions),
+                                        checked = matchByDimensions,
+                                        onCheckedChange = { checked: Boolean ->
+                                            viewModel.setMatchOptions(matchByFilename, matchBySize, checked)
+                                        }
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
                                 text = stringResource(R.string.search_matches),
                                 style = MaterialTheme.typography.titleMedium
                             )
@@ -258,6 +304,30 @@ fun SearchScreen(
                 )
             },
             onDismiss = { showDeleteDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun RuleCheckBox(
+    text: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge
         )
     }
 }
