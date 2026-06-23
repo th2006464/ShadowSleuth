@@ -47,6 +47,12 @@ class ImageScanner(private val context: Context) {
                 if (size < minSizeBytes) continue
 
                 val id = cursor.getLong(columnIndexes.id)
+                val width = cursor.getInt(columnIndexes.width)
+                val height = cursor.getInt(columnIndexes.height)
+
+                // 过滤无效或损坏的图片元数据：宽或高为 0 的通常不是真实图片
+                if (width <= 0 || height <= 0) continue
+
                 images.add(
                     ImageMetadata(
                         id = id,
@@ -58,8 +64,8 @@ class ImageScanner(private val context: Context) {
                         displayName = cursor.getString(columnIndexes.displayName) ?: "",
                         sizeBytes = size,
                         dateAdded = cursor.getLong(columnIndexes.dateAdded) * 1000,
-                        width = cursor.getInt(columnIndexes.width),
-                        height = cursor.getInt(columnIndexes.height),
+                        width = width,
+                        height = height,
                         mimeType = cursor.getString(columnIndexes.mimeType) ?: "image/*"
                     )
                 )

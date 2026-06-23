@@ -1,7 +1,9 @@
 package com.shadowsleuth.app.viewmodel
 
 import android.app.Application
+import android.app.RecoverableSecurityException
 import android.content.Context
+import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
@@ -63,6 +65,17 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _scrollToTopResults = MutableSharedFlow<Unit>()
     val scrollToTopResults: SharedFlow<Unit> = _scrollToTopResults.asSharedFlow()
+
+    private val _pendingDeleteRequest = MutableSharedFlow<IntentSender>()
+    val pendingDeleteRequest: SharedFlow<IntentSender> = _pendingDeleteRequest.asSharedFlow()
+
+    private var pendingDeleteImage: ImageMetadata? = null
+    private var pendingDeleteCallbacks: DeleteCallbacks? = null
+
+    private data class DeleteCallbacks(
+        val onSuccess: () -> Unit,
+        val onError: (String) -> Unit
+    )
 
     private var allImages: List<ImageMetadata> = emptyList()
 
@@ -140,12 +153,32 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     onError("删除失败：系统未删除该图片")
                 }
+            } catch (e: RecoverableSecurityException) {
+                pendingDeleteImage = image
+                pendingDeleteCallbacks = DeleteCallbacks(onSuccess, onError)
+                _pendingDeleteRequest.emit(e.userAction.actionIntent.intentSender)
             } catch (e: SecurityException) {
-                onError("需要更高权限才能删除此图片，请手动在系统相册中删除")
+                onError("需要存储写入权限才能删除此图片，请检查权限设置")
             } catch (e: Exception) {
                 onError(e.message ?: "删除图片失败")
             }
         }
+    }
+
+    /**
+     * 用户授权删除后重试之前失败的删除请求
+     */
+    fun retryPendingDelete() {
+        val image = pendingDeleteImage ?: return
+        val callbacks = pendingDeleteCallbacks ?: return
+        pendingDeleteImage = null
+        pendingDeleteCallbacks = null
+        deleteImage(image, callbacks.onSuccess, callbacks.onError)
+    }
+
+    fun clearPendingDelete() {
+        pendingDeleteImage = null
+        pendingDeleteCallbacks = null
     }
 
     private fun removeImageFromState(image: ImageMetadata) {
@@ -196,9 +229,33 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
+        /**
+         * Android 9 及以下删除文件需要 WRITE_EXTERNAL_STORAGE 权限
+         */
+        fun getWritePermission(): String {
+            return android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        }
+
+        fun needWritePermissionForDelete(): Boolean {
+            return Build.VERSION.SDK_INT <= Build.VERSION_CODES.P
+        }
+
         fun hasPermission(context: Context): Boolean {
             return context.checkSelfPermission(getRequiredPermission()) ==
                     android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+
+        fun hasWritePermission(context: Context): Boolean {
+            return context.checkSelfPermission(getWritePermission()) ==
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+
+        fun getAllRequiredPermissions(): Array<String> {
+            val permissions = mutableListOf(getRequiredPermission())
+            if (needWritePermissionForDelete()) {
+                permissions.add(getWritePermission())
+            }
+            return permissions.toTypedArray()
         }
     }
 }

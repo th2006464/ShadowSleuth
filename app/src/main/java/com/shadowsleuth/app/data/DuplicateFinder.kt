@@ -56,7 +56,8 @@ class DuplicateFinder {
         }
 
         if (matchByDimensions) {
-            val byDimensions = images.groupBy { "${it.width}x${it.height}" }
+            val validImages = images.filter { it.width > 0 && it.height > 0 }
+            val byDimensions = validImages.groupBy { "${it.width}x${it.height}" }
             byDimensions.values
                 .filter { it.size >= 2 }
                 .forEach { groupImages ->
@@ -113,15 +114,20 @@ class DuplicateFinder {
         }
 
         if (matchByDimensions) {
-            val matches = others.filter { it.width == sample.width && it.height == sample.height }
-            if (matches.isNotEmpty()) {
-                groups.add(
-                    DuplicateGroup(
-                        id = UUID.randomUUID().toString(),
-                        matchType = MatchType.DIMENSIONS,
-                        images = (listOf(sample) + matches).sortedByDescending { it.dateAdded }
+            if (sample.width > 0 && sample.height > 0) {
+                val matches = others.filter {
+                    it.width > 0 && it.height > 0 &&
+                    it.width == sample.width && it.height == sample.height
+                }
+                if (matches.isNotEmpty()) {
+                    groups.add(
+                        DuplicateGroup(
+                            id = UUID.randomUUID().toString(),
+                            matchType = MatchType.DIMENSIONS,
+                            images = (listOf(sample) + matches).sortedByDescending { it.dateAdded }
+                        )
                     )
-                )
+                }
             }
         }
 

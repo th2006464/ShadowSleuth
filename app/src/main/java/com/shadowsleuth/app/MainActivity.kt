@@ -19,6 +19,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -31,29 +34,56 @@ import com.shadowsleuth.app.ui.scan.ScanScreen
 import com.shadowsleuth.app.ui.search.SearchScreen
 import com.shadowsleuth.app.ui.theme.ShadowSleuthTheme
 import com.shadowsleuth.app.viewmodel.ScanViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: ScanViewModel by viewModels()
 
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
+    private val permissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val readGranted = permissions[ScanViewModel.getRequiredPermission()] ?: false
+        if (readGranted) {
             viewModel.startScan()
+        }
+    }
+
+    private val deletePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            viewModel.retryPendingDelete()
+        } else {
+            viewModel.clearPendingDelete()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!ScanViewModel.hasPermission(this)) {
-            permissionLauncher.launch(ScanViewModel.getRequiredPermission())
+
+        val missingPermissions = ScanViewModel.getAllRequiredPermissions()
+            .filter { checkSelfPermission(it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
+            .toTypedArray()
+
+        if (missingPermissions.isNotEmpty()) {
+            permissionsLauncher.launch(missingPermissions)
         }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.pendingDeleteRequest.collect { intentSender ->
+                    val request = androidx.activity.result.IntentSenderRequest.Builder(intentSender).build()
+                    deletePermissionLauncher.launch(request)
+                }
+            }
+        }
+
         setContent {
             ShadowSleuthTheme {
                 val navController = rememberNavController()
                 MainApp(navController, viewModel) { permission ->
-                    permissionLauncher.launch(permission)
+                    permissionsLauncher.launch(arrayOf(permission))
                 }
             }
         }
