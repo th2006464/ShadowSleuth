@@ -46,6 +46,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!ScanViewModel.hasPermission(this)) {
+            permissionLauncher.launch(ScanViewModel.getRequiredPermission())
+        }
         setContent {
             ShadowSleuthTheme {
                 val navController = rememberNavController()

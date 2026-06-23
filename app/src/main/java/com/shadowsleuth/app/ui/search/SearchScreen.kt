@@ -93,7 +93,11 @@ fun SearchScreen(
         ) {
             Button(
                 onClick = {
-                    pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    if (ScanViewModel.hasPermission(context)) {
+                        pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    } else {
+                        viewModel.setSearchError("需要相册权限才能搜索图片，请授予权限后重试")
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {

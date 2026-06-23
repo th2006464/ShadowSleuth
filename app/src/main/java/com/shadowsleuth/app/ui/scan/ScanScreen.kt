@@ -12,14 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -91,24 +90,28 @@ fun ScanScreen(
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
                         imageVector = Icons.Filled.PhotoLibrary,
                         contentDescription = null,
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(36.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "智能查找重复图片",
-                        style = MaterialTheme.typography.headlineSmall
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center
                     )
                     Text(
                         text = "纯本地运行，不上传、不删除任何图片",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -118,33 +121,30 @@ fun ScanScreen(
                 text = "匹配规则",
                 style = MaterialTheme.typography.titleMedium
             )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-                FilterChip(
-                    selected = matchByFilename,
-                    onClick = { viewModel.setMatchOptions(!matchByFilename, matchBySize) },
-                    label = { Text(stringResource(R.string.match_by_filename)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.Storage,
-                            contentDescription = null,
-                            modifier = Modifier.size(FilterChipDefaults.IconSize)
-                        )
-                    }
-                )
-                FilterChip(
-                    selected = matchBySize,
-                    onClick = { viewModel.setMatchOptions(matchByFilename, !matchBySize) },
-                    label = { Text(stringResource(R.string.match_by_size)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.Search,
-                            contentDescription = null,
-                            modifier = Modifier.size(FilterChipDefaults.IconSize)
-                        )
-                    }
-                )
+                Column(
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    RuleCheckBox(
+                        text = stringResource(R.string.match_by_filename),
+                        checked = matchByFilename,
+                        onCheckedChange = { checked ->
+                            viewModel.setMatchOptions(checked, matchBySize)
+                        }
+                    )
+                    RuleCheckBox(
+                        text = stringResource(R.string.match_by_size),
+                        checked = matchBySize,
+                        onCheckedChange = { checked ->
+                            viewModel.setMatchOptions(matchByFilename, checked)
+                        }
+                    )
+                }
             }
 
             // Small image threshold
@@ -209,5 +209,29 @@ fun ScanScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+private fun RuleCheckBox(
+    text: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }
