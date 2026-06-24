@@ -272,6 +272,13 @@ Get the latest APK from [GitHub Releases](https://github.com/th2006464/ShadowSle
 
 ## 📋 Changelog
 
+### v1.3.2 (2026-06-24) — 0x0 过滤 + 同时间同大小排除
+
+| 🇨🇳 | 🇬🇧 |
+|:---|:---|
+| **过滤 0x0 像素图片**：dHash 搜索结果中不再显示宽高为 0 的无效图片 | **Filter 0x0 images**: Invalid 0x0-dimension images excluded from dHash results |
+| **同时间+同大小排除**：时间戳和文件大小都一致的图片（同一份文件重复索引）不做 dHash 匹配 | **Same time+size exclusion**: Images with identical timestamp AND size (same file re-indexed) excluded from dHash |
+
 ### v1.3.1 (2026-06-24) — Bug Fixes + Performance Polish
 
 | 🇨🇳 | 🇬🇧 |
@@ -323,5 +330,6 @@ MIT — see [LICENSE](LICENSE).
   <br>
   <sub>Made with ❤️ by <a href="https://github.com/th2006464">th2006464</a></sub>
 </div>
+
 
 
