@@ -11,6 +11,7 @@ import java.util.UUID
  * 匹配规则：
  * - 文件名相同（忽略大小写）
  * - 文件字节大小相同
+ * - dHash 差分哈希相似（汉明距离 ≤ DHashCalculator.SIMILARITY_THRESHOLD）
  *
  * 排除规则：
  * - 组内所有图片的保存时间（MediaStore DATE_ADDED，精确到秒）完全一致时，
@@ -117,5 +118,81 @@ class DuplicateFinder {
         if (images.size < 2) return false
         val firstSecond = images.first().dateAdded / 1000
         return images.all { it.dateAdded / 1000 == firstSecond }
+    }
+
+    /**
+     * 全量 dHash 扫描：在已预计算的哈希表中查找相似组。
+     *
+     * @param hashMap 图片 id → dHash 映射（由 ViewModel 在 IO 线程预计算）
+     * @param images  对应图片元数据列表
+     * @return 相似图片分组列表
+     */
+    fun findDuplicatesByDHash(
+        hashMap: Map<Long, Long>,
+        images: List<ImageMetadata>
+    ): List<DuplicateGroup> {
+        val groups = mutableListOf<DuplicateGroup>()
+        val imageList = images.filter { hashMap.containsKey(it.id) }
+        val used = mutableSetOf<Long>()
+
+        for (i in imageList.indices) {
+            val imgA = imageList[i]
+            if (imgA.id in used) continue
+            val hashA = hashMap[imgA.id] ?: continue
+
+            val similar = mutableListOf(imgA)
+            for (j in (i + 1) until imageList.size) {
+                val imgB = imageList[j]
+                if (imgB.id in used) continue
+                val hashB = hashMap[imgB.id] ?: continue
+                if (DHashCalculator.isSimilar(hashA, hashB)) {
+                    similar.add(imgB)
+                }
+            }
+
+            if (similar.size >= 2 && !allSameSaveTime(similar)) {
+                similar.forEach { used.add(it.id) }
+                groups.add(
+                    DuplicateGroup(
+                        id = UUID.randomUUID().toString(),
+                        matchType = MatchType.DHASH,
+                        images = similar.sortedByDescending { it.dateAdded }
+                    )
+                )
+            }
+        }
+
+        return groups.sortedByDescending { it.images.size }
+    }
+
+    /**
+     * 单图 dHash 搜索：找出与样本图片 dHash 相似的图片。
+     *
+     * @param sampleHash 样本图片的 dHash 值
+     * @param sample     样本图片元数据
+     * @param hashMap    图片 id → dHash 映射
+     * @param images     全量图片元数据列表
+     * @return 相似图片分组（最多 1 组）
+     */
+    fun findMatchesByDHash(
+        sampleHash: Long,
+        sample: ImageMetadata,
+        hashMap: Map<Long, Long>,
+        images: List<ImageMetadata>
+    ): List<DuplicateGroup> {
+        val others = images.filter { it.id != sample.id }
+        val matches = others.filter { img ->
+            val hash = hashMap[img.id] ?: return@filter false
+            DHashCalculator.isSimilar(sampleHash, hash)
+        }
+        val groupImages = listOf(sample) + matches
+        if (matches.isEmpty() || allSameSaveTime(groupImages)) return emptyList()
+        return listOf(
+            DuplicateGroup(
+                id = UUID.randomUUID().toString(),
+                matchType = MatchType.DHASH,
+                images = groupImages.sortedByDescending { it.dateAdded }
+            )
+        )
     }
 }

@@ -11,13 +11,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.VerticalAlignTop
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -51,6 +56,7 @@ import com.shadowsleuth.app.ui.components.DeleteConfirmDialog
 import com.shadowsleuth.app.ui.components.DuplicateGroupCard
 import com.shadowsleuth.app.ui.components.ImageActionBottomSheet
 import com.shadowsleuth.app.ui.components.ImageDetailDialog
+import com.shadowsleuth.app.viewmodel.DHashScanState
 import com.shadowsleuth.app.viewmodel.ScanState
 import com.shadowsleuth.app.viewmodel.ScanViewModel
 import kotlinx.coroutines.launch
@@ -58,7 +64,8 @@ import kotlinx.coroutines.launch
 private enum class ResultFilter {
     ALL,
     FILENAME,
-    SIZE
+    SIZE,
+    DHASH
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +76,7 @@ fun ResultsScreen(
     onImageClick: (ImageMetadata) -> Unit
 ) {
     val state = viewModel.scanState.collectAsState().value
+    val dHashScanState = viewModel.dHashScanState.collectAsState().value
     val allGroups = if (state is ScanState.Complete) state.groups else emptyList()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -82,6 +90,7 @@ fun ResultsScreen(
                 ResultFilter.ALL -> allGroups
                 ResultFilter.FILENAME -> allGroups.filter { it.matchType == DuplicateGroup.MatchType.FILENAME }
                 ResultFilter.SIZE -> allGroups.filter { it.matchType == DuplicateGroup.MatchType.SIZE }
+                ResultFilter.DHASH -> allGroups.filter { it.matchType == DuplicateGroup.MatchType.DHASH }
             }
         }
     }
@@ -184,6 +193,12 @@ fun ResultsScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(12.dp))
+                    // dHash 扫描按钮
+                    DHashScanButton(
+                        dHashScanState = dHashScanState,
+                        onStartDHashScan = { viewModel.startDHashScan() }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     FilterChipsRow(
                         currentFilter = currentFilter,
                         onFilterSelected = { currentFilter = it }
@@ -254,13 +269,75 @@ fun ResultsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun DHashScanButton(
+    dHashScanState: DHashScanState,
+    onStartDHashScan: () -> Unit
+) {
+    when (dHashScanState) {
+        is DHashScanState.Idle -> {
+            Button(
+                onClick = onStartDHashScan,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AutoAwesome,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.dhash_scan))
+            }
+        }
+        is DHashScanState.Computing -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (dHashScanState.total > 0)
+                        "正在计算 dHash… ${dHashScanState.computed}/${dHashScanState.total}"
+                    else
+                        "正在计算 dHash…",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        is DHashScanState.Complete -> {
+            Text(
+                text = "dHash 扫描完成，发现 ${dHashScanState.groups.size} 组相似图片",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+        }
+        is DHashScanState.Error -> {
+            Text(
+                text = "dHash 扫描失败：${dHashScanState.message}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun FilterChipsRow(
     currentFilter: ResultFilter,
     onFilterSelected: (ResultFilter) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         MatchFilterChip(
             selected = currentFilter == ResultFilter.ALL,
@@ -278,6 +355,12 @@ private fun FilterChipsRow(
             selected = currentFilter == ResultFilter.SIZE,
             onSelectedChange = { onFilterSelected(ResultFilter.SIZE) },
             label = stringResource(R.string.size_match),
+            modifier = Modifier.weight(1f)
+        )
+        MatchFilterChip(
+            selected = currentFilter == ResultFilter.DHASH,
+            onSelectedChange = { onFilterSelected(ResultFilter.DHASH) },
+            label = stringResource(R.string.dhash_similar),
             modifier = Modifier.weight(1f)
         )
     }

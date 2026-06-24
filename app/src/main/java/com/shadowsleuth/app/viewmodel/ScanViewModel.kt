@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.shadowsleuth.app.data.DHashCalculator
 import com.shadowsleuth.app.data.DuplicateFinder
 import com.shadowsleuth.app.data.ImageScanner
 import com.shadowsleuth.app.data.model.DuplicateGroup
@@ -40,6 +41,16 @@ sealed class SearchState {
     data class Error(val message: String) : SearchState()
 }
 
+/**
+ * dHash 扫描状态
+ */
+sealed class DHashScanState {
+    data object Idle : DHashScanState()
+    data class Computing(val computed: Int, val total: Int) : DHashScanState()
+    data class Complete(val groups: List<DuplicateGroup>) : DHashScanState()
+    data class Error(val message: String) : DHashScanState()
+}
+
 class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     private val scanner = ImageScanner(application)
@@ -50,6 +61,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _searchState = MutableStateFlow<SearchState>(SearchState.NoSample)
     val searchState: StateFlow<SearchState> = _searchState.asStateFlow()
+
+    private val _dHashScanState = MutableStateFlow<DHashScanState>(DHashScanState.Idle)
+    val dHashScanState: StateFlow<DHashScanState> = _dHashScanState.asStateFlow()
 
     private val _minSizeKb = MutableStateFlow(50)
     val minSizeKb: StateFlow<Int> = _minSizeKb.asStateFlow()
@@ -75,6 +89,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     private var allImages: List<ImageMetadata> = emptyList()
+
+    /** 已计算好的 dHash 缓存：图片 id → dHash */
+    private var dHashCache: MutableMap<Long, Long> = mutableMapOf()
 
     fun setMinSize(kb: Int) {
         _minSizeKb.value = kb
@@ -107,6 +124,55 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * dHash 全量扫描：计算所有图片的 dHash 并找出相似组
+     * 相似组追加到当前 ScanState.Complete 的 groups 中
+     */
+    fun startDHashScan() {
+        viewModelScope.launch {
+            _dHashScanState.value = DHashScanState.Computing(0, 0)
+            try {
+                // 确保已扫描
+                if (allImages.isEmpty()) {
+                    allImages = scanner.scanAllImages(minSizeBytes = minSizeKb.value * 1024L)
+                }
+                val context = getApplication<Application>()
+                val total = allImages.size
+                val hashMap = mutableMapOf<Long, Long>()
+
+                allImages.forEachIndexed { index, img ->
+                    val hash = DHashCalculator.compute(context, img.uri)
+                    if (hash != null) hashMap[img.id] = hash
+                    if ((index + 1) % 20 == 0 || index == total - 1) {
+                        _dHashScanState.value = DHashScanState.Computing(index + 1, total)
+                    }
+                }
+
+                dHashCache = hashMap
+                val dHashGroups = finder.findDuplicatesByDHash(hashMap, allImages)
+                _dHashScanState.value = DHashScanState.Complete(dHashGroups)
+
+                // 将 dHash 结果追加到 ScanState.Complete
+                val currentScan = _scanState.value
+                if (currentScan is ScanState.Complete) {
+                    val existingIds = currentScan.groups.map { it.id }.toSet()
+                    val merged = currentScan.groups +
+                        dHashGroups.filter { it.id !in existingIds }
+                    _scanState.value = ScanState.Complete(currentScan.images, merged)
+                } else {
+                    val groups = finder.findDuplicates(
+                        allImages,
+                        matchByFilename = matchByFilename.value,
+                        matchBySize = matchBySize.value
+                    ) + dHashGroups
+                    _scanState.value = ScanState.Complete(allImages, groups)
+                }
+            } catch (e: Exception) {
+                _dHashScanState.value = DHashScanState.Error(e.message ?: "dHash 扫描失败")
+            }
+        }
+    }
+
     fun searchSample(sample: ImageMetadata) {
         viewModelScope.launch {
             try {
@@ -122,6 +188,47 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 _searchState.value = SearchState.Ready(sample, groups)
             } catch (e: Exception) {
                 _searchState.value = SearchState.Error(e.message ?: "搜索失败")
+            }
+        }
+    }
+
+    /**
+     * dHash 单图搜索：在所有图片中找出与样本相似的图片
+     * 结果追加到当前 SearchState.Ready 的 groups 中
+     */
+    fun searchSampleByDHash(sample: ImageMetadata) {
+        viewModelScope.launch {
+            try {
+                if (allImages.isEmpty()) {
+                    allImages = scanner.scanAllImages(minSizeBytes = minSizeKb.value * 1024L)
+                }
+                val context = getApplication<Application>()
+
+                // 计算样本 dHash
+                val sampleHash = DHashCalculator.compute(context, sample.uri)
+                    ?: run {
+                        _searchState.value = SearchState.Error("无法计算该图片的 dHash，可能格式不支持")
+                        return@launch
+                    }
+
+                // 批量补全缺失的 dHash
+                allImages.forEach { img ->
+                    if (!dHashCache.containsKey(img.id)) {
+                        val h = DHashCalculator.compute(context, img.uri)
+                        if (h != null) dHashCache[img.id] = h
+                    }
+                }
+
+                val dHashGroups = finder.findMatchesByDHash(sampleHash, sample, dHashCache, allImages)
+
+                // 与现有结果合并
+                val currentSearch = _searchState.value
+                val existingGroups = if (currentSearch is SearchState.Ready) currentSearch.groups else emptyList()
+                val existingIds = existingGroups.map { it.id }.toSet()
+                val merged = existingGroups + dHashGroups.filter { it.id !in existingIds }
+                _searchState.value = SearchState.Ready(sample, merged)
+            } catch (e: Exception) {
+                _searchState.value = SearchState.Error(e.message ?: "dHash 搜索失败")
             }
         }
     }
@@ -177,6 +284,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun removeImageFromState(image: ImageMetadata) {
         allImages = allImages.filter { it.id != image.id }
+        dHashCache.remove(image.id)
 
         val currentScan = _scanState.value
         if (currentScan is ScanState.Complete) {

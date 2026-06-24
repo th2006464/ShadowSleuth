@@ -46,4 +46,7 @@
     <string name="manage_storage_required">需要完整存储权限</string>
     <string name="manage_storage_rationale">Android 10+ 删除图片需要完整存储访问权限，前往系统设置开启后可一次授权、无需每次删除确认。</string>
     <string name="go_to_settings">前往设置</string>
+    <string name="dhash_scan">dHash 相似扫描</string>
+    <string name="dhash_similar">dHash 相似</string>
+    <string name="dhash_similar_search">dHash 相似搜索</string>
 </resources>
