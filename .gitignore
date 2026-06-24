@@ -45,3 +45,9 @@ Thumbs.db
 *.tmp
 *.temp
 outputs/create_release.py
+
+# Build logs
+build_log.txt
+build_log2.txt
+build_err.txt
+build_err2.txt
