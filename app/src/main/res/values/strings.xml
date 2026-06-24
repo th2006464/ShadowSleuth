@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">双影密探</string>
     <string name="app_name_en">ShadowSleuth</string>
@@ -56,4 +56,8 @@
     <string name="delete_confirm_message">确定要删除这张图片吗？此操作无法撤销。</string>
     <string name="delete_confirm_yes">删除</string>
     <string name="delete_confirm_no">取消</string>
+    <string name="fmt_version">版本：%s</string>
+
 </resources>
+
+

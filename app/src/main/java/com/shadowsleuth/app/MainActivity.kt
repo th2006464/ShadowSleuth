@@ -365,6 +365,13 @@ private fun FlatInfoDialog(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            Text(
+                text = "版本：1.3.2",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // dHash cache card
