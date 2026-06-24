@@ -156,7 +156,8 @@ class DuplicateFinder {
                     DuplicateGroup(
                         id = UUID.randomUUID().toString(),
                         matchType = MatchType.DHASH,
-                        images = similar.sortedByDescending { it.dateAdded }
+                        images = similar.sortedByDescending { it.dateAdded },
+                        dHashValue = hashA
                     )
                 )
             }
@@ -191,7 +192,8 @@ class DuplicateFinder {
             DuplicateGroup(
                 id = UUID.randomUUID().toString(),
                 matchType = MatchType.DHASH,
-                images = groupImages.sortedByDescending { it.dateAdded }
+                images = groupImages.sortedByDescending { it.dateAdded },
+                dHashValue = sampleHash
             )
         )
     }

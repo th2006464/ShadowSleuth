@@ -228,12 +228,17 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val context = getApplication<Application>()
 
-                // 计算样本 dHash
-                val sampleHash = DHashCalculator.compute(context, sample.uri)
+                // 优先从缓存读取样本 dHash
+                val sampleHash: Long = dHashCache[sample.id]
+                    ?: DHashCalculator.compute(context, sample.uri)
                     ?: run {
                         _searchState.value = SearchState.Error("无法计算该图片的 dHash，可能格式不支持")
                         return@launch
                     }
+                // 样本 dHash 未缓存则补入
+                if (!dHashCache.containsKey(sample.id)) {
+                    dHashCache[sample.id] = sampleHash
+                }
 
                 // 批量补全缺失的 dHash
                 allImages.forEach { img ->

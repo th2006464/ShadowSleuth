@@ -6,7 +6,8 @@ package com.shadowsleuth.app.data.model
 data class DuplicateGroup(
     val id: String,
     val matchType: MatchType,
-    val images: List<ImageMetadata>
+    val images: List<ImageMetadata>,
+    val dHashValue: Long? = null
 ) {
     enum class MatchType {
         FILENAME,
@@ -18,7 +19,14 @@ data class DuplicateGroup(
         get() = when (matchType) {
             MatchType.FILENAME -> images.firstOrNull()?.displayName ?: "未知文件"
             MatchType.SIZE -> images.firstOrNull()?.formattedSize ?: "未知大小"
-            MatchType.DHASH -> images.firstOrNull()?.displayName ?: "相似图片"
+            MatchType.DHASH -> {
+                val hash = dHashValue
+                if (hash != null) {
+                    "dHash: ${hash.toULong().toString(16).uppercase().padStart(16, '0')}"
+                } else {
+                    "相似图片"
+                }
+            }
         }
 
     val subtitle: String
