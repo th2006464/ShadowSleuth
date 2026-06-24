@@ -34,8 +34,9 @@ Thumbs.db
 *.swp
 *.swo
 
-# WorkBuddy local workspace state
-.workbuddy/
+# WorkBuddy local workspace state (allow project-level skills)
+.workbuddy/memory/
+.workbuddy/agents/
 
 # Logs
 *.log

@@ -84,7 +84,7 @@ agent_created: true
 - **主题模式**：浅色 / 深色 / 跟随系统，使用 `DataStore` + `ThemeViewModel` 管理。
 - **匹配规则**：默认文件名 + 文件大小 + dHash 相似（汉明距离 ≤ 10），扫描页与搜索页不展示匹配选项。
 - **排除规则**：保存时间完全一致（精确到秒）的组不视为重复（所有三种规则均适用）。
-- **权限策略**：启动时请求 READ + WRITE；Android 10+ 提供 `MANAGE_EXTERNAL_STORAGE` 入口；删除时保留 `RecoverableSecurityException` 降级方案。
+- **权限策略**：启动时请求 READ + WRITE；Android 10+ 提供 MANAGE_EXTERNAL_STORAGE 入口；删除时保留 `RecoverableSecurityException` 降级方案。
 - **扫描触发**：进入 APP 不自动扫描，用户点击「开始扫描」后扫描并自动跳转结果页。
 - **版本号**：递增 `versionCode`，`versionName` 形如 `1.0.X`。
 - **dHash 缓存**：内存缓存，重启后清空；关于页展示占用容量（自动格式化 B/KB/MB）和创建时间。
@@ -110,4 +110,4 @@ agent_created: true
 | `docs/project-experience.md` | 版本迭代经验总结 |
 | `.workbuddy/memory/MEMORY.md` | 项目长期记忆（版本、约定、技能文件位置） |
 | `.workbuddy/memory/YYYY-MM-DD.md` | 每日工作日志 |
-| `outputs/create_release.py` | GitHub Release 创建脚本（含 token，**不提交**) |
+| `outputs/create_release.py` | GitHub Release 创建脚本（含 token，**不提交**） |
