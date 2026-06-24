@@ -30,7 +30,6 @@
     <string name="size_match">容量相同</string>
     <string name="view_details">详细信息</string>
     <string name="delete_image">删除图片</string>
-    <string name="delete_confirm_message">确定要删除「%1$s」吗？删除后无法恢复。</string>
     <string name="delete">删除</string>
     <string name="cancel">取消</string>
     <string name="image_details">图片详情</string>
@@ -49,4 +48,12 @@
     <string name="dhash_scan">dHash 相似扫描</string>
     <string name="dhash_similar">dHash 相似</string>
     <string name="dhash_similar_search">dHash 相似搜索</string>
+    <string name="delete_permission">删除权限</string>
+    <string name="delete_permission_desc">默认关闭，开启后允许删除重复图片。删除操作需要二次确认。</string>
+    <string name="delete_permission_on_hint">删除权限已开启，删除图片时需要二次确认。</string>
+    <string name="delete_permission_off_hint">删除权限未开启，默认保护您的照片不被删除。</string>
+    <string name="delete_confirm_title">确认删除</string>
+    <string name="delete_confirm_message">确定要删除这张图片吗？此操作无法撤销。</string>
+    <string name="delete_confirm_yes">删除</string>
+    <string name="delete_confirm_no">取消</string>
 </resources>

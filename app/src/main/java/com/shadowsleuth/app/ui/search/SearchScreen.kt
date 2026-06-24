@@ -243,46 +243,10 @@ fun SearchScreen(
                                 isDHashSearching = false
                             }
                             val searchListState = rememberLazyListState()
-                            val scrollAtEnd by remember {
-                                derivedStateOf {
-                                    val info = searchListState.layoutInfo
-                                    val total = info.totalItemsCount
-                                    val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: 0
-                                    lastVisible >= total - 1
-                                }
-                            }
-                            val scrollProgress by remember {
-                                derivedStateOf {
-                                    val info = searchListState.layoutInfo
-                                    val total = info.totalItemsCount
-                                    val first = info.visibleItemsInfo.firstOrNull()?.index ?: 0
-                                    val visible = info.visibleItemsInfo.size
-                                    if (total <= visible) 0f
-                                    else (first.toFloat() / (total - visible).toFloat()).coerceIn(0f, 1f)
-                                }
-                            }
 
+                            // Scrollbar: draw as a sibling Canvas inside Box
                             Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .drawWithContent {
-                                        drawContent()
-                                        // Draw scrollbar thumb on right edge
-                                        val info = searchListState.layoutInfo
-                                        if (info.totalItemsCount > info.visibleItemsInfo.size) {
-                                            val barWidth = 4.dp.toPx()
-                                            val barHeight = size.height * 0.25f
-                                            val padding = 4.dp.toPx()
-                                            val barX = size.width - barWidth - padding
-                                            val barY = (size.height - barHeight) * scrollProgress
-                                            drawRoundRect(
-                                                color = Color.Gray.copy(alpha = 0.35f),
-                                                topLeft = Offset(barX, barY),
-                                                size = Size(barWidth, barHeight.coerceAtLeast(40f)),
-                                                cornerRadius = CornerRadius(barWidth / 2)
-                                            )
-                                        }
-                                    }
+                                modifier = Modifier.fillMaxSize()
                             ) {
                                 LazyColumn(
                                     state = searchListState,
@@ -298,6 +262,45 @@ fun SearchScreen(
                                                 selectedImage = image
                                                 showActionSheet = true
                                             }
+                                        )
+                                    }
+                                }
+
+                                // Scrollbar thumb — absolutely positioned on the right edge
+                                val canScrollForward = searchListState.canScrollForward
+                                val canScrollBackward = searchListState.canScrollBackward
+                                if (canScrollForward || canScrollBackward) {
+                                    val scrollProgress by remember {
+                                        derivedStateOf {
+                                            val layoutInfo = searchListState.layoutInfo
+                                            val total = layoutInfo.totalItemsCount
+                                            val visible = layoutInfo.visibleItemsInfo.size
+                                            if (total <= visible || visible == 0) 0f
+                                            else {
+                                                val firstVisibleIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
+                                                val scrollRange = (total - visible).toFloat().coerceAtLeast(1f)
+                                                (firstVisibleIndex / scrollRange).coerceIn(0f, 1f)
+                                            }
+                                        }
+                                    }
+                                    Canvas(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .width(6.dp)
+                                            .fillMaxHeight()
+                                            .padding(vertical = 8.dp)
+                                    ) {
+                                        val barWidth = size.width
+                                        val barTrackHeight = size.height
+                                        // thumb height: at least 40px, at most 35% of track
+                                        val thumbHeight = (barTrackHeight * 0.35f).coerceAtLeast(40f)
+                                        val maxThumbY = barTrackHeight - thumbHeight
+                                        val thumbY = maxThumbY * scrollProgress
+                                        drawRoundRect(
+                                            color = Color.DarkGray.copy(alpha = 0.55f),
+                                            topLeft = androidx.compose.ui.geometry.Offset(0f, thumbY),
+                                            size = androidx.compose.ui.geometry.Size(barWidth, thumbHeight),
+                                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f)
                                         )
                                     }
                                 }

@@ -28,14 +28,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
@@ -127,7 +130,6 @@ class MainActivity : ComponentActivity() {
                     onRequestPermission = { permission ->
                         permissionsLauncher.launch(arrayOf(permission))
                     },
-                    onRequestManageStorage = { openManageStorageSettings() }
                 )
             }
         }
@@ -154,7 +156,6 @@ private fun MainApp(
     viewModel: ScanViewModel,
     themeViewModel: ThemeViewModel,
     onRequestPermission: (String) -> Unit,
-    onRequestManageStorage: () -> Unit
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -265,7 +266,6 @@ private fun MainApp(
                     onNavigate = { navController.navigate(it.route) },
                     onInfoClick = { showInfoDialog = true },
                     onThemeClick = { showThemeDialog = true },
-                    onRequestManageStorage = onRequestManageStorage
                 )
             }
             composable(Screen.Results.route) {
@@ -307,7 +307,7 @@ private fun MainApp(
     if (showInfoDialog) {
         FlatInfoDialog(
             viewModel = viewModel,
-            onDismiss = { showInfoDialog = false }
+            onDismiss = { showInfoDialog = false },
         )
     }
 
@@ -325,10 +325,14 @@ private fun MainApp(
 
 // ── Flat Info Dialog (replaces system AlertDialog) ────────────────────────────
 @Composable
-private fun FlatInfoDialog(viewModel: ScanViewModel, onDismiss: () -> Unit) {
+private fun FlatInfoDialog(
+    viewModel: ScanViewModel,
+    onDismiss: () -> Unit
+) {
     val dHashCacheSize by viewModel.dHashCacheSize.collectAsState()
     val dHashCacheBytes by viewModel.dHashCacheBytes.collectAsState()
     val dHashCacheCreatedAt by viewModel.dHashCacheCreatedAt.collectAsState()
+    val deletePermissionEnabled by viewModel.deletePermissionEnabled.collectAsState()
     var showClearConfirm by remember { mutableStateOf(false) }
 
     val cacheSizeText = when {
@@ -411,6 +415,61 @@ private fun FlatInfoDialog(viewModel: ScanViewModel, onDismiss: () -> Unit) {
                             modifier = Modifier.fillMaxWidth(),
                             icon = Icons.Filled.DeleteSweep,
                             color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 删除权限卡片
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(14.dp)
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.delete_permission),
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.delete_permission_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (deletePermissionEnabled) stringResource(R.string.delete_permission_on_hint) else stringResource(R.string.delete_permission_off_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Switch(
+                            checked = deletePermissionEnabled,
+                            onCheckedChange = { enabled ->
+                                viewModel.setDeletePermissionEnabled(enabled)
+                            }
                         )
                     }
                 }

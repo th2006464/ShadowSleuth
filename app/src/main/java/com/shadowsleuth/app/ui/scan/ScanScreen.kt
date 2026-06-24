@@ -76,7 +76,6 @@ fun ScanScreen(
     onNavigate: (Screen) -> Unit,
     onInfoClick: () -> Unit = {},
     onThemeClick: () -> Unit = {},
-    onRequestManageStorage: () -> Unit = {}
 ) {
     val state by viewModel.scanState.collectAsState()
     val minSizeKb by viewModel.minSizeKb.collectAsState()
@@ -168,13 +167,6 @@ fun ScanScreen(
 
             // Hero Card — flat, no gradient
             FlatHeroCard()
-
-            // MANAGE_EXTERNAL_STORAGE banner
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-                !ScanViewModel.hasManageStoragePermission()
-            ) {
-                FlatManageStorageBanner(onClick = onRequestManageStorage)
-            }
 
             // Size threshold label + slider
             Row(
@@ -338,59 +330,6 @@ private fun FlatHeroCard() {
                     text = "纯本地运行 · 不上传 · 不删除",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.80f)
-                )
-            }
-        }
-    }
-}
-
-// ── Flat Manage Storage Banner ────────────────────────────────────────────────
-@Composable
-private fun FlatManageStorageBanner(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.tertiaryContainer)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(16.dp)
-    ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.manage_storage_required),
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                )
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = stringResource(R.string.manage_storage_rationale),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f)
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.tertiary)
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.go_to_settings),
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onTertiary
                 )
             }
         }
