@@ -93,6 +93,17 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     /** 已计算好的 dHash 缓存：图片 id → dHash */
     private var dHashCache: MutableMap<Long, Long> = mutableMapOf()
 
+    /** 对外暴露缓存条目数，用于 UI 展示 */
+    private val _dHashCacheSize = MutableStateFlow(0)
+    val dHashCacheSize: StateFlow<Int> = _dHashCacheSize.asStateFlow()
+
+    /** 清空 dHash 缓存，同时重置 dHash 扫描状态 */
+    fun clearDHashCache() {
+        dHashCache.clear()
+        _dHashCacheSize.value = 0
+        _dHashScanState.value = DHashScanState.Idle
+    }
+
     fun setMinSize(kb: Int) {
         _minSizeKb.value = kb
     }
@@ -149,6 +160,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 dHashCache = hashMap
+                _dHashCacheSize.value = hashMap.size
                 val dHashGroups = finder.findDuplicatesByDHash(hashMap, allImages)
                 _dHashScanState.value = DHashScanState.Complete(dHashGroups)
 
@@ -218,6 +230,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                         if (h != null) dHashCache[img.id] = h
                     }
                 }
+                _dHashCacheSize.value = dHashCache.size
 
                 val dHashGroups = finder.findMatchesByDHash(sampleHash, sample, dHashCache, allImages)
 
