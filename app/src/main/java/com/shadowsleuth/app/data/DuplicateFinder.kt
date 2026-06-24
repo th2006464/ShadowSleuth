@@ -147,15 +147,18 @@ class DuplicateFinder {
             }
 
             if (similar.size >= 2) {
-                similar.forEach { used.add(it.id) }
-                groups.add(
-                    DuplicateGroup(
-                        id = UUID.randomUUID().toString(),
-                        matchType = MatchType.DHASH,
-                        images = similar.sortedByDescending { it.dateAdded },
-                        dHashValue = hashA
+                val validImages = similar.filter { it.width > 0 && it.height > 0 }
+                if (validImages.size >= 2 && !allSameTimeAndSize(validImages)) {
+                    validImages.forEach { used.add(it.id) }
+                    groups.add(
+                        DuplicateGroup(
+                            id = UUID.randomUUID().toString(),
+                            matchType = MatchType.DHASH,
+                            images = validImages.sortedByDescending { it.dateAdded },
+                            dHashValue = hashA
+                        )
                     )
-                )
+                }
             }
         }
 
@@ -277,15 +280,18 @@ class DuplicateFinder {
             }
 
             if (similar.size >= 2) {
-                similar.forEach { used.add(it.id) }
-                groups.add(
-                    DuplicateGroup(
-                        id = UUID.randomUUID().toString(),
-                        matchType = MatchType.DHASH,
-                        images = similar.sortedByDescending { it.dateAdded },
-                        dHashValue = hashA
+                val validImages = similar.filter { it.width > 0 && it.height > 0 }
+                if (validImages.size >= 2 && !allSameTimeAndSize(validImages)) {
+                    validImages.forEach { used.add(it.id) }
+                    groups.add(
+                        DuplicateGroup(
+                            id = UUID.randomUUID().toString(),
+                            matchType = MatchType.DHASH,
+                            images = validImages.sortedByDescending { it.dateAdded },
+                            dHashValue = hashA
+                        )
                     )
-                )
+                }
             }
 
             if (i % 500 == 0) {
@@ -317,13 +323,15 @@ class DuplicateFinder {
             val hash = hashMap[img.id] ?: return@filter false
             DHashCalculator.isSimilar(sampleHash, hash)
         }
-        val groupImages = listOf(sample) + matches
-        if (matches.isEmpty()) return emptyList()
+        val allCandidates = listOf(sample) + matches
+        val validCandidates = allCandidates.filter { it.width > 0 && it.height > 0 }
+        val validMatches = validCandidates.filter { it.id != sample.id }
+        if (validMatches.isEmpty() || allSameTimeAndSize(validCandidates)) return emptyList()
         return listOf(
             DuplicateGroup(
                 id = UUID.randomUUID().toString(),
                 matchType = MatchType.DHASH,
-                images = groupImages.sortedByDescending { it.dateAdded },
+                images = validCandidates.filter { it.width > 0 && it.height > 0 }.sortedByDescending { it.dateAdded },
                 dHashValue = sampleHash
             )
         )
@@ -336,5 +344,17 @@ class DuplicateFinder {
         if (images.size < 2) return false
         val firstSecond = images.first().dateAdded / 1000
         return images.all { it.dateAdded / 1000 == firstSecond }
+    }
+
+    /**
+     * 判断一组图片是否保存时间 AND 文件大小完全相同（精确到秒）。
+     * 时间戳+大小都一致时，很可能是同一份文件被系统在不同路径下重复索引，
+     * dHash 匹配时应排除以避免重复显示。
+     */
+    private fun allSameTimeAndSize(images: List<ImageMetadata>): Boolean {
+        if (images.size < 2) return false
+        val firstSecond = images.first().dateAdded / 1000
+        val firstSize = images.first().sizeBytes
+        return images.all { it.dateAdded / 1000 == firstSecond && it.sizeBytes == firstSize }
     }
 }
