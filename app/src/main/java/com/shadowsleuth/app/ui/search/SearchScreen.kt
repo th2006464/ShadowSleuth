@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,7 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
@@ -36,7 +34,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,10 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -242,67 +235,22 @@ fun SearchScreen(
                             if (hasDHashGroup) {
                                 isDHashSearching = false
                             }
-                            val searchListState = rememberLazyListState()
-
-                            // Scrollbar: draw as a sibling Canvas inside Box
-                            Box(
-                                modifier = Modifier.fillMaxSize()
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(bottom = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                LazyColumn(
-                                    state = searchListState,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(bottom = 16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    items(groups, key = { it.id }) { group ->
-                                        DuplicateGroupCard(
-                                            group = group,
-                                            onImageClick = onImageClick,
-                                            onImageLongClick = { image ->
-                                                selectedImage = image
-                                                showActionSheet = true
-                                            }
-                                        )
-                                    }
-                                }
-
-                                // Scrollbar thumb — absolutely positioned on the right edge
-                                val canScrollForward = searchListState.canScrollForward
-                                val canScrollBackward = searchListState.canScrollBackward
-                                if (canScrollForward || canScrollBackward) {
-                                    val scrollProgress by remember {
-                                        derivedStateOf {
-                                            val layoutInfo = searchListState.layoutInfo
-                                            val total = layoutInfo.totalItemsCount
-                                            val visible = layoutInfo.visibleItemsInfo.size
-                                            if (total <= visible || visible == 0) 0f
-                                            else {
-                                                val firstVisibleIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
-                                                val scrollRange = (total - visible).toFloat().coerceAtLeast(1f)
-                                                (firstVisibleIndex / scrollRange).coerceIn(0f, 1f)
-                                            }
+                                itemsIndexed(groups) { index, group ->
+                                    DuplicateGroupCard(
+                                        group = group,
+                                        index = index + 1,
+                                        total = groups.size,
+                                        onImageClick = onImageClick,
+                                        onImageLongClick = { image ->
+                                            selectedImage = image
+                                            showActionSheet = true
                                         }
-                                    }
-                                    Canvas(
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .width(6.dp)
-                                            .fillMaxHeight()
-                                            .padding(vertical = 8.dp)
-                                    ) {
-                                        val barWidth = size.width
-                                        val barTrackHeight = size.height
-                                        // thumb height: at least 40px, at most 35% of track
-                                        val thumbHeight = (barTrackHeight * 0.35f).coerceAtLeast(40f)
-                                        val maxThumbY = barTrackHeight - thumbHeight
-                                        val thumbY = maxThumbY * scrollProgress
-                                        drawRoundRect(
-                                            color = Color.DarkGray.copy(alpha = 0.55f),
-                                            topLeft = androidx.compose.ui.geometry.Offset(0f, thumbY),
-                                            size = androidx.compose.ui.geometry.Size(barWidth, thumbHeight),
-                                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f)
-                                        )
-                                    }
+                                    )
                                 }
                             }
                         }

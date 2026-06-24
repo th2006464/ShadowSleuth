@@ -25,6 +25,8 @@ import com.shadowsleuth.app.data.model.ImageMetadata
 @Composable
 fun DuplicateGroupCard(
     group: DuplicateGroup,
+    index: Int = 0,
+    total: Int = 0,
     onImageClick: (ImageMetadata) -> Unit,
     onImageLongClick: (ImageMetadata) -> Unit,
     modifier: Modifier = Modifier
@@ -38,6 +40,14 @@ fun DuplicateGroupCard(
     ) {
         // Title + match type badge
         Row(verticalAlignment = Alignment.CenterVertically) {
+            if (index > 0 && total > 0) {
+                Text(
+                    text = "$index/$total",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+            }
             Text(
                 text = group.title,
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),

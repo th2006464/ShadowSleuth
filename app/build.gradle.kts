@@ -11,8 +11,8 @@ android {
         applicationId = "com.shadowsleuth.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 13
-        versionName = "1.2.2"
+        versionCode = 14
+        versionName = "1.2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
