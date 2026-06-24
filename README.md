@@ -17,7 +17,7 @@
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/screen.png" width="90%" alt="ShadowSleuth — 扫描、结果、搜索" />
+  <img src="docs/screenshots/screen.jpg" width="90%" alt="ShadowSleuth — 扫描、结果、搜索" />
 </p>
 
 ---
@@ -330,6 +330,7 @@ MIT — see [LICENSE](LICENSE).
   <br>
   <sub>Made with ❤️ by <a href="https://github.com/th2006464">th2006464</a></sub>
 </div>
+
 
 
 
