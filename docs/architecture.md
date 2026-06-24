@@ -23,8 +23,12 @@
 | 模块 | 文件 | 职责 |
 |------|------|------|
 | **UI 层** | `ui/scan`、`ui/results`、`ui/search`、`ui/preview` | 展示扫描页、结果页、搜索页、预览页，接收用户点击与长按事件 |
+| **组件库** | `ui/components/SsComponents.kt` | 自定义扁平化组件：Primary/Secondary/Danger/Outline/Ghost 按钮、FilterChip、Dialog、ActionSheet、FAB、Badge、EmptyState |
+| **弹窗与操作表** | `ui/components/ImageActionDialogs.kt` | 图片详情、删除确认（SsDialog）、底部操作表（SsActionSheet） |
+| **卡片与列表** | `ui/components/DuplicateGroupCard.kt`、`ImageListItem.kt` | 分组卡片与图片列表项（扁平化设计） |
 | **扫描器** | `data/ImageScanner.kt` | 通过 `MediaStore` + `ContentResolver` 查询本地图片元数据 |
 | **匹配器** | `data/DuplicateFinder.kt` | 按文件名 / 文件大小分组判定重复，并排除保存时间完全一致的组 |
+| **哈希计算器** | `data/DHashCalculator.kt` | 差分哈希算法，图片缩至 9×8 后计算 64-bit 哈希，汉明距离 ≤ 10 视为相似 |
 | **EXIF 读取器** | `data/ExifReader.kt` | 读取图片 EXIF 与尺寸信息 |
 | **状态容器** | `viewmodel/ScanViewModel.kt` | 持有扫描状态、搜索状态、删除请求与重试逻辑 |
 | **主题容器** | `ui/theme/ThemeViewModel.kt` | 持有浅色 / 深色 / 跟随系统主题模式 |

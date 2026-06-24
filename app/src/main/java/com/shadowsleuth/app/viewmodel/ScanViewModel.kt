@@ -97,10 +97,20 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private val _dHashCacheSize = MutableStateFlow(0)
     val dHashCacheSize: StateFlow<Int> = _dHashCacheSize.asStateFlow()
 
+    /** 缓存占用内存估算（字节） */
+    private val _dHashCacheBytes = MutableStateFlow(0L)
+    val dHashCacheBytes: StateFlow<Long> = _dHashCacheBytes.asStateFlow()
+
+    /** 缓存创建时间（毫秒时间戳），0 表示未创建 */
+    private val _dHashCacheCreatedAt = MutableStateFlow(0L)
+    val dHashCacheCreatedAt: StateFlow<Long> = _dHashCacheCreatedAt.asStateFlow()
+
     /** 清空 dHash 缓存，同时重置 dHash 扫描状态 */
     fun clearDHashCache() {
         dHashCache.clear()
         _dHashCacheSize.value = 0
+        _dHashCacheBytes.value = 0L
+        _dHashCacheCreatedAt.value = 0L
         _dHashScanState.value = DHashScanState.Idle
     }
 
@@ -161,6 +171,8 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
                 dHashCache = hashMap
                 _dHashCacheSize.value = hashMap.size
+                _dHashCacheBytes.value = hashMap.size * 48L
+                _dHashCacheCreatedAt.value = System.currentTimeMillis()
                 val dHashGroups = finder.findDuplicatesByDHash(hashMap, allImages)
                 _dHashScanState.value = DHashScanState.Complete(dHashGroups)
 
@@ -231,6 +243,10 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 _dHashCacheSize.value = dHashCache.size
+                _dHashCacheBytes.value = dHashCache.size * 48L
+                if (_dHashCacheCreatedAt.value == 0L) {
+                    _dHashCacheCreatedAt.value = System.currentTimeMillis()
+                }
 
                 val dHashGroups = finder.findMatchesByDHash(sampleHash, sample, dHashCache, allImages)
 

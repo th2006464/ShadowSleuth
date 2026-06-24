@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
@@ -46,16 +45,16 @@ fun ImageListItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(10.dp))
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
             )
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .padding(vertical = 6.dp, horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ThumbnailImage(image = image, size = 72)
-        Spacer(modifier = Modifier.width(14.dp))
+        ThumbnailImage(image = image, size = 64)
+        Spacer(modifier = Modifier.width(12.dp))
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -64,39 +63,23 @@ fun ImageListItem(
                 text = image.displayName,
                 style = MaterialTheme.typography.titleSmall,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = dateText,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (showExtraInfo) {
-                Spacer(modifier = Modifier.height(3.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    InfoChip(text = image.formattedSize)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    InfoChip(text = image.formattedDimensions)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SsBadge(text = image.formattedSize, color = MaterialTheme.colorScheme.primary)
+                    SsBadge(text = image.formattedDimensions, color = MaterialTheme.colorScheme.secondary)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun InfoChip(text: String) {
-    Box(
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 8.dp, vertical = 2.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
@@ -110,9 +93,10 @@ private fun rememberDateText(timestamp: Long): String {
 
 @Composable
 fun EmptyImagePlaceholder(size: Int = 64) {
+    val _s = size.dp
     Box(
         modifier = Modifier
-            .size(size.dp)
+            .size(_s)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
@@ -121,7 +105,7 @@ fun EmptyImagePlaceholder(size: Int = 64) {
             imageVector = Icons.Default.Image,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(size.dp / 2)
+            modifier = Modifier.size((size / 2).dp)
         )
     }
 }

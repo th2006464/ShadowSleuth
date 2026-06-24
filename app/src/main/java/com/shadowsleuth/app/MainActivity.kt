@@ -9,31 +9,35 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,8 +46,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -52,6 +60,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.shadowsleuth.app.ui.components.SsDialog
+import com.shadowsleuth.app.ui.components.SsGhostButton
 import com.shadowsleuth.app.ui.navigation.Screen
 import com.shadowsleuth.app.ui.preview.PreviewScreen
 import com.shadowsleuth.app.ui.results.ResultsScreen
@@ -70,15 +80,11 @@ class MainActivity : ComponentActivity() {
 
     private val permissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { _ ->
-        // 用户授权后不会自动扫描，需点击主页「开始扫描」按钮手动触发
-    }
+    ) { _ -> }
 
     private val manageStorageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { _ ->
-        // 用户从设置返回后，MainApp 会重新检查并隐藏提示
-    }
+    ) { _ -> }
 
     private val deletePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -141,6 +147,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// ── Main App ──────────────────────────────────────────────────────────────────
 @Composable
 private fun MainApp(
     navController: NavHostController,
@@ -160,7 +167,13 @@ private fun MainApp(
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .background(MaterialTheme.colorScheme.background),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     bottomBarItems.forEach { screen ->
                         val selected = currentRoute == screen.route
                         val label = when (screen) {
@@ -169,37 +182,76 @@ private fun MainApp(
                             Screen.Search -> stringResource(R.string.search)
                             else -> ""
                         }
-                        val icon = when (screen) {
+                        val iconVec = when (screen) {
                             Screen.Scan -> Icons.Filled.PhotoLibrary
                             Screen.Results -> Icons.Filled.Storage
                             Screen.Search -> Icons.Filled.Search
                             else -> Icons.Filled.PhotoLibrary
                         }
-                        NavigationBarItem(
-                            icon = { Icon(icon, contentDescription = label) },
-                            label = { Text(label) },
-                            selected = selected,
-                            onClick = {
-                                when {
-                                    selected && screen == Screen.Results -> {
-                                        viewModel.scrollToTopResults()
-                                    }
-                                    !selected -> {
-                                        navController.navigate(screen.route) {
-                                            popUpTo(Screen.Scan.route) {
-                                                saveState = true
+
+                        val interactionSource = remember { MutableInteractionSource() }
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxSize()
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = rememberRipple()
+                                ) {
+                                    when {
+                                        selected && screen == Screen.Results -> {
+                                            viewModel.scrollToTopResults()
+                                        }
+                                        !selected -> {
+                                            navController.navigate(screen.route) {
+                                                popUpTo(Screen.Scan.route) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
                                             }
-                                            launchSingleTop = true
-                                            restoreState = true
                                         }
                                     }
+                                },
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            if (selected) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.primary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = iconVec,
+                                        contentDescription = label,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
                                 }
+                            } else {
+                                Icon(
+                                    imageVector = iconVec,
+                                    contentDescription = label,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
-                        )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = label,
+                                fontSize = 10.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -240,25 +292,27 @@ private fun MainApp(
                 if (image != null) {
                     PreviewScreen(image = image, onBack = { navController.popBackStack() })
                 } else {
-                    Text(
-                        text = "图片未找到",
-                        modifier = Modifier.padding(innerPadding),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "图片未找到",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
     }
 
     if (showInfoDialog) {
-        InfoDialog(
+        FlatInfoDialog(
             viewModel = viewModel,
             onDismiss = { showInfoDialog = false }
         )
     }
 
     if (showThemeDialog) {
-        ThemePickerDialog(
+        FlatThemePickerDialog(
             currentMode = themeViewModel.themeMode.collectAsState().value,
             onModeSelected = { mode ->
                 themeViewModel.setThemeMode(mode)
@@ -269,198 +323,251 @@ private fun MainApp(
     }
 }
 
+// ── Flat Info Dialog (replaces system AlertDialog) ────────────────────────────
 @Composable
-private fun InfoDialog(viewModel: ScanViewModel, onDismiss: () -> Unit) {
+private fun FlatInfoDialog(viewModel: ScanViewModel, onDismiss: () -> Unit) {
     val dHashCacheSize by viewModel.dHashCacheSize.collectAsState()
+    val dHashCacheBytes by viewModel.dHashCacheBytes.collectAsState()
+    val dHashCacheCreatedAt by viewModel.dHashCacheCreatedAt.collectAsState()
     var showClearConfirm by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(24.dp),
-        title = { Text("关于双影密探") },
-        text = {
-            Column(
+    val cacheSizeText = when {
+        dHashCacheBytes >= 1024 * 1024 -> String.format("%.1f MB", dHashCacheBytes / (1024.0 * 1024.0))
+        dHashCacheBytes >= 1024 -> String.format("%.1f KB", dHashCacheBytes / 1024.0)
+        else -> "${dHashCacheBytes} B"
+    }
+
+    val cacheTimeText = if (dHashCacheCreatedAt > 0) {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+        sdf.format(java.util.Date(dHashCacheCreatedAt))
+    } else ""
+
+    SsDialog(
+        onDismiss = onDismiss,
+        title = "关于双影密探",
+        dismissText = stringResource(R.string.got_it)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = "双影密探（ShadowSleuth）是一款纯本地、离线、无网络上传的 Android 重复图片查找工具。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // dHash cache card
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(14.dp)
             ) {
-                Text(
-                    text = "双影密探（ShadowSleuth）是一款纯本地、离线、无网络上传的 Android 重复图片查找工具。",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // dHash 缓存信息卡片
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Filled.Memory,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "dHash 缓存",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Memory,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (dHashCacheSize == 0)
-                                "暂无缓存（首次执行 dHash 扫描后会生成）"
-                            else
-                                "已缓存 $dHashCacheSize 张图片的哈希值（内存中，重启后自动清空）",
+                            text = "dHash 缓存",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    if (dHashCacheSize == 0) {
+                        Text(
+                            text = "暂无缓存（首次执行 dHash 扫描后会生成）",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (dHashCacheSize > 0) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedButton(
-                                onClick = { showClearConfirm = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.DeleteSweep,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("清空 dHash 缓存", style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
+                    } else {
+                        Text(
+                            text = "已缓存 $dHashCacheSize 张图片的哈希值（内存中，重启后自动清空）",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "占用内存约 $cacheSizeText · 创建于 $cacheTimeText",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (dHashCacheSize > 0) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        SsGhostButton(
+                            text = "清空 dHash 缓存",
+                            onClick = { showClearConfirm = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            icon = Icons.Filled.DeleteSweep,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "项目发布与更新：",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "https://github.com/th2006464/ShadowSleuth",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "联系我们：",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "微信：Fox_Tang",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "版权与声明：",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "· 本应用不会上传、分析或删除您的图片，所有操作均在本地完成。\n" +
-                            "· 应用图标、界面及代码均受版权保护，未经授权禁止转载或商用。\n" +
-                            "· 使用本应用即表示您同意自行承担操作风险，建议删除前再次确认。\n" +
-                            "· 如有侵权或违规内容，请联系我们处理。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.got_it))
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionTitle("项目发布与更新")
+            Text(
+                text = "https://github.com/th2006464/ShadowSleuth",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SectionTitle("联系我们")
+            Text(
+                text = "微信：Fox_Tang",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SectionTitle("版权与声明")
+            Text(
+                text = "· 本应用不会上传、分析或删除您的图片，所有操作均在本地完成。\n" +
+                        "· 应用图标、界面及代码均受版权保护，未经授权禁止转载或商用。\n" +
+                        "· 使用本应用即表示您同意自行承担操作风险，建议删除前再次确认。\n" +
+                        "· 如有侵权或违规内容，请联系我们处理。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-    )
+    }
 
+    // Clear cache confirmation
     if (showClearConfirm) {
-        AlertDialog(
-            onDismissRequest = { showClearConfirm = false },
-            shape = RoundedCornerShape(20.dp),
-            title = { Text("清空 dHash 缓存") },
-            text = { Text("将清除内存中已缓存的 $dHashCacheSize 条哈希记录。下次使用 dHash 功能时会重新计算。确定继续？") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.clearDHashCache()
-                    showClearConfirm = false
-                }) {
-                    Text("清空", color = MaterialTheme.colorScheme.error)
-                }
+        SsDialog(
+            onDismiss = { showClearConfirm = false },
+            title = "清空 dHash 缓存",
+            confirmText = "清空",
+            onConfirm = {
+                viewModel.clearDHashCache()
+                showClearConfirm = false
             },
-            dismissButton = {
-                TextButton(onClick = { showClearConfirm = false }) {
-                    Text("取消")
-                }
-            }
-        )
+            confirmColor = MaterialTheme.colorScheme.error,
+            dismissText = "取消"
+        ) {
+            Text(
+                text = "将清除内存中已缓存的 $dHashCacheSize 条哈希记录。下次使用 dHash 功能时会重新计算。确定继续？",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
+// ── Flat Theme Picker Dialog (replaces system AlertDialog) ────────────────────
 @Composable
-private fun ThemePickerDialog(
+private fun FlatThemePickerDialog(
     currentMode: ThemeMode,
     onModeSelected: (ThemeMode) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(24.dp),
-        title = { Text("主题模式") },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                ThemeOption(
-                    label = stringResource(R.string.theme_light),
-                    selected = currentMode == ThemeMode.LIGHT,
-                    onClick = { onModeSelected(ThemeMode.LIGHT) }
-                )
-                ThemeOption(
-                    label = stringResource(R.string.theme_dark),
-                    selected = currentMode == ThemeMode.DARK,
-                    onClick = { onModeSelected(ThemeMode.DARK) }
-                )
-                ThemeOption(
-                    label = stringResource(R.string.theme_system),
-                    selected = currentMode == ThemeMode.SYSTEM,
-                    onClick = { onModeSelected(ThemeMode.SYSTEM) }
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+    SsDialog(
+        onDismiss = onDismiss,
+        title = "主题模式",
+        dismissText = stringResource(R.string.cancel)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            FlatThemeOption(
+                label = stringResource(R.string.theme_light),
+                selected = currentMode == ThemeMode.LIGHT,
+                onClick = { onModeSelected(ThemeMode.LIGHT) }
+            )
+            FlatThemeOption(
+                label = stringResource(R.string.theme_dark),
+                selected = currentMode == ThemeMode.DARK,
+                onClick = { onModeSelected(ThemeMode.DARK) }
+            )
+            FlatThemeOption(
+                label = stringResource(R.string.theme_system),
+                selected = currentMode == ThemeMode.SYSTEM,
+                onClick = { onModeSelected(ThemeMode.SYSTEM) }
+            )
         }
-    )
+    }
 }
 
 @Composable
-private fun ThemeOption(
+private fun FlatThemeOption(
     label: String,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    TextButton(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+    val interactionSource = remember { MutableInteractionSource() }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                else MaterialTheme.colorScheme.surface
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = rememberRipple()
+            ) { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "✓",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+        }
+        Spacer(modifier = Modifier.width(14.dp))
         Text(
-            text = if (selected) "✓ $label" else label,
+            text = label,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+            ),
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
     }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.SemiBold
+    )
+    Spacer(modifier = Modifier.height(4.dp))
 }

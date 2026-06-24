@@ -23,8 +23,8 @@ data class DuplicateGroup(
 
     val subtitle: String
         get() = when (matchType) {
-            MatchType.FILENAME -> "文件名相同 · ${images.size} 张"
-            MatchType.SIZE -> "文件大小相同 · ${images.size} 张"
+            MatchType.FILENAME -> "名称相同 · ${images.size} 张"
+            MatchType.SIZE -> "容量相同 · ${images.size} 张"
             MatchType.DHASH -> "dHash 相似 · ${images.size} 张"
         }
 }

@@ -121,8 +121,8 @@ ScanViewModel 更新 ScanState.Complete
 - **源码**：`app/` 目录下，Kotlin + Jetpack Compose + Material 3
 - **构建方式**：使用 Gradle Wrapper，`./gradlew assembleDebug`
 - **APK 产物**：`app/build/outputs/apk/debug/app-debug.apk`（Debug 包，约 17 MB）
-- **GitHub 直接下载**：[outputs/ShadowSleuth-debug.apk](https://github.com/th2006464/ShadowSleuth/blob/main/outputs/ShadowSleuth-debug.apk)
-- **版本标签**：[v1.0.9-debug](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.0.9-debug)（dHash 相似图片检测 + 结果页 dHash 过滤器 + 搜索页 dHash 相似搜索）
+- **GitHub 直接下载**：[outputs/ShadowSleuth-v1.2.0.apk](https://github.com/th2006464/ShadowSleuth/blob/main/outputs/ShadowSleuth-v1.2.0.apk)
+- **版本标签**：[v1.2.0](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.2.0)（扁平化设计正式版，全面自定义 UI）
 - **构建环境**：OpenJDK 17 + Android SDK 34 + Gradle 8.2
 
 ### 本地构建
@@ -135,14 +135,26 @@ ScanViewModel 更新 ScanState.Complete
 
 ### 注意
 
-- 当前为 **Debug 包**，仅供开发/测试安装。
-- 正式发布需要生成签名密钥并构建 Release 版本。
+- 当前为 **正式版**，无 -debug 后缀。
 
 ---
 
 ## 更新日志
 
-- **v1.0.9-debug**（当前）
+- **v1.2.0**（当前）：**扁平化正式版**
+  - 🎨 全面 UI 重设计：采用现代化扁平设计风格，纯色块、大圆角、高对比度
+  - 🧩 自定义组件库：替换所有系统 AlertDialog/ModalBottomSheet/FilterChip/FAB，统一设计语言
+  - 新增：`SsComponents.kt` 组件库（Primary/Secondary/Danger/Outline/Ghost 按钮、FilterChip、Dialog、ActionSheet、FAB、Badge、EmptyState）
+  - 优化：HeroCard 去渐变改用纯色块，导航栏自定义高亮选中态
+  - 优化：关于弹窗、主题选择弹窗、详情弹窗、删除确认弹窗、底部操作表全面扁平化
+  - 优化：PreviewScreen、DuplicateGroupCard、ImageListItem 扁平化重写
+  - 优化：浅色/深色主题色板全面调整，对比度更强
+  - 版本：versionCode=11，versionName=1.2.0
+
+- **v1.1.0-debug** → 跳号（内部迭代）
+  - dHash 缓存管理，结果统计信息，UI 微调
+
+- **v1.0.9-debug**
   - 新增：dHash 差分哈希相似图片检测，算法：图片缩至 9×8 → 64-bit 差分哈希 → 汉明距离 ≤ 10 视为相似
   - 新增：结果页顶部「dHash 相似扫描」按钮，点击后后台计算全量 dHash 并追加相似分组
   - 新增：结果页过滤器新增「dHash 相似」选项，可单独筛选 dHash 相似结果
@@ -243,4 +255,4 @@ ScanViewModel 更新 ScanState.Complete
 
 ---
 
-*Last updated: 2026-06-24 (v1.0.9-debug)*
+*Last updated: 2026-06-24 (v1.2.0)*

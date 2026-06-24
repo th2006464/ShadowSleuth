@@ -19,23 +19,14 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.VerticalAlignTop
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -48,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shadowsleuth.app.R
 import com.shadowsleuth.app.data.model.DuplicateGroup
@@ -56,19 +48,21 @@ import com.shadowsleuth.app.ui.components.DeleteConfirmDialog
 import com.shadowsleuth.app.ui.components.DuplicateGroupCard
 import com.shadowsleuth.app.ui.components.ImageActionBottomSheet
 import com.shadowsleuth.app.ui.components.ImageDetailDialog
+import com.shadowsleuth.app.ui.components.SsEmptyState
+import com.shadowsleuth.app.ui.components.SsFab
+import com.shadowsleuth.app.ui.components.SsFilterChipRow
+import com.shadowsleuth.app.ui.components.SsPrimaryButton
+import com.shadowsleuth.app.ui.components.SsSecondaryButton
+import com.shadowsleuth.app.ui.components.SsTopBar
 import com.shadowsleuth.app.viewmodel.DHashScanState
 import com.shadowsleuth.app.viewmodel.ScanState
 import com.shadowsleuth.app.viewmodel.ScanViewModel
 import kotlinx.coroutines.launch
 
 private enum class ResultFilter {
-    ALL,
-    FILENAME,
-    SIZE,
-    DHASH
+    ALL, FILENAME, SIZE, DHASH
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultsScreen(
     viewModel: ScanViewModel,
@@ -83,6 +77,13 @@ fun ResultsScreen(
     val listState = rememberLazyListState()
 
     var currentFilter by remember { mutableStateOf(ResultFilter.ALL) }
+
+    val filterItems = listOf(
+        ResultFilter.ALL to "全部",
+        ResultFilter.FILENAME to stringResource(R.string.filename_match),
+        ResultFilter.SIZE to stringResource(R.string.size_match),
+        ResultFilter.DHASH to stringResource(R.string.dhash_similar)
+    )
 
     val groups by remember(allGroups, currentFilter) {
         derivedStateOf {
@@ -113,70 +114,37 @@ fun ResultsScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.results),
-                        modifier = Modifier
-                            .padding(start = 4.dp)
-                            .clickable {
-                                scope.launch {
-                                    listState.animateScrollToItem(0)
-                                }
-                            }
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.close)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+            SsTopBar(
+                title = stringResource(R.string.results),
+                onBack = onBack
             )
         },
         floatingActionButton = {
             if (showScrollToTop) {
-                FloatingActionButton(
+                SsFab(
+                    icon = Icons.Filled.VerticalAlignTop,
+                    contentDescription = "回到顶部",
                     onClick = {
-                        scope.launch {
-                            listState.animateScrollToItem(0)
-                        }
-                    },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.VerticalAlignTop,
-                        contentDescription = "回到顶部"
-                    )
-                }
+                        scope.launch { listState.animateScrollToItem(0) }
+                    }
+                )
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (allGroups.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(paddingValues)
+                    .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = stringResource(R.string.no_duplicates),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "请先返回扫描页执行扫描",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                SsEmptyState(
+                    icon = Icons.Filled.ContentCopy,
+                    title = stringResource(R.string.no_duplicates),
+                    subtitle = "请先返回扫描页执行扫描"
+                )
             }
         } else {
             LazyColumn(
@@ -184,26 +152,40 @@ fun ResultsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 item {
-                    Text(
-                        text = "共 ${groups.size} 组重复图片",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    // dHash 扫描按钮
-                    DHashScanButton(
+                    // Summary row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "共 ${groups.size} 组重复图片",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    scope.launch { listState.animateScrollToItem(0) }
+                                }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    // dHash scan button
+                    FlatDHashScanButton(
                         dHashScanState = dHashScanState,
                         onStartDHashScan = { viewModel.startDHashScan() }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    FilterChipsRow(
-                        currentFilter = currentFilter,
-                        onFilterSelected = { currentFilter = it }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    // Filter chips
+                    SsFilterChipRow(
+                        items = filterItems,
+                        selected = currentFilter,
+                        onSelect = { currentFilter = it }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
                 items(groups, key = { it.id }) { group ->
                     DuplicateGroupCard(
@@ -250,15 +232,11 @@ fun ResultsScreen(
                     selectedImage!!,
                     onSuccess = {
                         selectedImage = null
-                        scope.launch {
-                            snackbarHostState.showSnackbar("图片已删除")
-                        }
+                        scope.launch { snackbarHostState.showSnackbar("图片已删除") }
                     },
                     onError = { message ->
                         selectedImage = null
-                        scope.launch {
-                            snackbarHostState.showSnackbar(message)
-                        }
+                        scope.launch { snackbarHostState.showSnackbar(message) }
                     }
                 )
             },
@@ -267,30 +245,19 @@ fun ResultsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DHashScanButton(
+private fun FlatDHashScanButton(
     dHashScanState: DHashScanState,
     onStartDHashScan: () -> Unit
 ) {
     when (dHashScanState) {
         is DHashScanState.Idle -> {
-            Button(
+            SsSecondaryButton(
+                text = stringResource(R.string.dhash_scan),
                 onClick = onStartDHashScan,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.AutoAwesome,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.dhash_scan))
-            }
+                icon = Icons.Filled.AutoAwesome
+            )
         }
         is DHashScanState.Computing -> {
             Row(
@@ -298,13 +265,16 @@ private fun DHashScanButton(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                Spacer(modifier = Modifier.width(8.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = if (dHashScanState.total > 0)
                         "正在计算 dHash… ${dHashScanState.computed}/${dHashScanState.total}"
-                    else
-                        "正在计算 dHash…",
+                    else "正在计算 dHash…",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -312,76 +282,19 @@ private fun DHashScanButton(
         }
         is DHashScanState.Complete -> {
             Text(
-                text = "dHash 扫描完成，发现 ${dHashScanState.groups.size} 组相似图片",
-                style = MaterialTheme.typography.bodySmall,
+                text = "✓ dHash 扫描完成，发现 ${dHashScanState.groups.size} 组相似图片",
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(vertical = 4.dp)
+                modifier = Modifier.padding(vertical = 6.dp)
             )
         }
         is DHashScanState.Error -> {
             Text(
-                text = "dHash 扫描失败：${dHashScanState.message}",
+                text = "✕ dHash 扫描失败：${dHashScanState.message}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(vertical = 4.dp)
+                modifier = Modifier.padding(vertical = 6.dp)
             )
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FilterChipsRow(
-    currentFilter: ResultFilter,
-    onFilterSelected: (ResultFilter) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        MatchFilterChip(
-            selected = currentFilter == ResultFilter.ALL,
-            onSelectedChange = { onFilterSelected(ResultFilter.ALL) },
-            label = "全部",
-            modifier = Modifier.weight(1f)
-        )
-        MatchFilterChip(
-            selected = currentFilter == ResultFilter.FILENAME,
-            onSelectedChange = { onFilterSelected(ResultFilter.FILENAME) },
-            label = stringResource(R.string.filename_match),
-            modifier = Modifier.weight(1f)
-        )
-        MatchFilterChip(
-            selected = currentFilter == ResultFilter.SIZE,
-            onSelectedChange = { onFilterSelected(ResultFilter.SIZE) },
-            label = stringResource(R.string.size_match),
-            modifier = Modifier.weight(1f)
-        )
-        MatchFilterChip(
-            selected = currentFilter == ResultFilter.DHASH,
-            onSelectedChange = { onFilterSelected(ResultFilter.DHASH) },
-            label = stringResource(R.string.dhash_similar),
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MatchFilterChip(
-    selected: Boolean,
-    onSelectedChange: () -> Unit,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onSelectedChange,
-        label = { Text(label, style = MaterialTheme.typography.labelMedium) },
-        modifier = modifier,
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
-    )
 }
