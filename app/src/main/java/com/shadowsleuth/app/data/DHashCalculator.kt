@@ -4,8 +4,14 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import com.shadowsleuth.app.data.model.ImageMetadata
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 
 /**
  * dHash（差分哈希）计算器
@@ -57,7 +63,7 @@ object DHashCalculator {
      *
      * @param context Android 上下文
      * @param uri 图片 URI
-     * @param targetPreviewSize 加载时的目标大致尺寸（像素），默认 64，
+     * @param targetPreviewSize 加载时的目标大致尺寸（像素），默认 64；
      *                           越小越快但哈希精度略降（推荐 48~128）
      * @return 64-bit dHash 值，计算失败时返回 null
      */
@@ -72,7 +78,8 @@ object DHashCalculator {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 BitmapFactory.decodeStream(inputStream, null, boundsOptions)
             }
-            val (imgWidth, imgHeight) = boundsOptions.outWidth to boundsOptions.outHeight
+            val imgWidth = boundsOptions.outWidth
+            val imgHeight = boundsOptions.outHeight
             if (imgWidth <= 0 || imgHeight <= 0) return@withContext null
 
             // Step 2: 计算 inSampleSize，使加载后的图片接近 targetPreviewSize
@@ -81,8 +88,11 @@ object DHashCalculator {
             // Step 3: 用 inSampleSize 加载缩小图
             val loadOptions = BitmapFactory.Options().apply { this.inSampleSize = inSampleSize }
             val inputStream = context.contentResolver.openInputStream(uri) ?: return@withContext null
-            val bitmap = BitmapFactory.decodeStream(inputStream, null, loadOptions)
-            inputStream.close()
+            val bitmap = try {
+                BitmapFactory.decodeStream(inputStream, null, loadOptions)
+            } finally {
+                inputStream.close()
+            }
             bitmap ?: return@withContext null
 
             computeFromBitmap(bitmap).also { bitmap.recycle() }
@@ -92,7 +102,104 @@ object DHashCalculator {
     }
 
     /**
-     * 计算 inSampleSize，使解码后的图片尺寸尽量接近（但不少于）reqWidth × reqHeight。
+     * 快速计算图片的 dHash（复用已知宽高，跳过 inJustDecodeBounds）
+     *
+     * 扫描阶段已通过 MediaStore 拿到图片的 width/height，
+     * 直接传入可省一次 ContentProvider IPC 调用。15000 张图省 15000 次文件打开。
+     *
+     * @param context      Android 上下文
+     * @param uri          图片 URI
+     * @param imgWidth     已知图片宽度（来自 MediaStore）
+     * @param imgHeight    已知图片高度（来自 MediaStore）
+     * @param targetPreviewSize 加载时的目标大致尺寸（像素），默认 64
+     * @return 64-bit dHash 值，计算失败时返回 null
+     */
+    suspend fun computeFastKnownSize(
+        context: Context,
+        uri: Uri,
+        imgWidth: Int,
+        imgHeight: Int,
+        targetPreviewSize: Int = 64
+    ): Long? = withContext(Dispatchers.IO) {
+        try {
+            if (imgWidth <= 0 || imgHeight <= 0) return@withContext null
+
+            val inSampleSize = calculateInSampleSize(imgWidth, imgHeight, targetPreviewSize, targetPreviewSize)
+
+            val loadOptions = BitmapFactory.Options().apply { this.inSampleSize = inSampleSize }
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return@withContext null
+            val bitmap = try {
+                BitmapFactory.decodeStream(inputStream, null, loadOptions)
+            } finally {
+                inputStream.close()
+            }
+            bitmap ?: return@withContext null
+
+            computeFromBitmap(bitmap).also { bitmap.recycle() }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 批量计算所有图片的 dHash，返回 { imageId → dHash } 映射。
+     *
+     * 使用结构化并发（coroutineScope + async）确保取消时所有子任务立即停止。
+     * 使用信号量控制并发解码数，避免同时解码太多 Bitmap 导致 OOM。
+     *
+     * @param context     Android 上下文
+     * @param images      图片列表（需已填充 width / height）
+     * @param parallelism 并发解码上限（默认 16，平衡速度与内存）
+     * @param batchSize   每批提交数量（默认 50）
+     * @param onProgress  (已计算数, 总数) → Unit 进度回调（在主线程调用）
+     * @return { imageId → dHash } 映射，仅包含计算成功的项
+     */
+    suspend fun computeBatch(
+        context: Context,
+        images: List<ImageMetadata>,
+        parallelism: Int = 16,
+        batchSize: Int = 50,
+        onProgress: (computed: Int, total: Int) -> Unit = { _, _ -> }
+    ): Map<Long, Long> = withContext(Dispatchers.IO) {
+        val result = mutableMapOf<Long, Long>()
+        val total = images.size
+        val semaphore = Semaphore(parallelism)
+
+        var batchStart = 0
+        while (batchStart < total) {
+            yield() // 每个 batch 让出协程，支持取消
+            val batchEnd = minOf(batchStart + batchSize, total)
+
+            // 每个 batch 内部用结构化并发
+            val deferredList = images.subList(batchStart, batchEnd).map { img ->
+                async {
+                    semaphore.withPermit {
+                        computeFastKnownSize(context, img.uri, img.width, img.height)
+                    }
+                }
+            }
+
+            // 收集本批结果
+            for ((idx, deferred) in deferredList.withIndex()) {
+                val hash = deferred.await()
+                if (hash != null) {
+                    val imageIndex = batchStart + idx
+                    result[images[imageIndex].id] = hash
+                }
+            }
+
+            batchStart = batchEnd
+            val completed = batchStart
+            withContext(Dispatchers.Main) {
+                onProgress(completed, total)
+            }
+        }
+
+        result
+    }
+
+    /**
+     * 计算 inSampleSize，使解码后的图片尺寸尽量接近（但不小于）reqWidth × reqHeight。
      *
      * 这是 Android 官方推荐算法（参见 BitmapFactory.Options 文档）。
      */

@@ -14,17 +14,16 @@ import com.shadowsleuth.app.data.DuplicateFinder
 import com.shadowsleuth.app.data.ImageScanner
 import com.shadowsleuth.app.data.model.DuplicateGroup
 import com.shadowsleuth.app.data.model.ImageMetadata
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * 扫描状态
@@ -51,7 +50,7 @@ sealed class SearchState {
  */
 sealed class DHashScanState {
     data object Idle : DHashScanState()
-    data class Computing(val computed: Int, val total: Int) : DHashScanState()
+    data class Computing(val computed: Int, val total: Int, val phase: String = "") : DHashScanState()
     data class Complete(val groups: List<DuplicateGroup>) : DHashScanState()
     data class Error(val message: String) : DHashScanState()
 }
@@ -144,7 +143,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 allImages = scanner.scanAllImages(
                     minSizeBytes = minSizeKb.value * 1024L,
                     onProgress = { count ->
-                        _scanState.value = ScanState.Scanning(count, "已扫描 $count 张图片…")
+                        _scanState.value = ScanState.Scanning(count, "已扫描 $count 张图片")
                     }
                 )
                 val groups = finder.findDuplicates(
@@ -163,11 +162,16 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
      * dHash 全量扫描：计算所有图片的 dHash 并找出相似组
      * 相似组追加到当前 ScanState.Complete 的 groups 中
      *
-     * 优化：使用 computeFast() + 并行计算，15000 张照片速度提升约 5-10 倍
+     * 性能优化（v1.3.0）：
+     * - 使用 computeBatch() 批量计算，复用已知宽高，节省一遍 openInputStream
+     * - 使用 Semaphore 控制并发解码数（默认 16），避免多图同时解码导致 OOM
+     * - 使用 findDuplicatesByDHashBatched() 分桶索引，O(n²) 降至近 O(n)
+     * - 所有耗时操作在 Dispatchers.Default/IO，不阻塞主线程
+     * - 协程 yield() 支持取消传播
      */
     fun startDHashScan() {
         viewModelScope.launch {
-            _dHashScanState.value = DHashScanState.Computing(0, 0)
+            _dHashScanState.value = DHashScanState.Computing(0, 0, "preparing")
             try {
                 // 确保已扫描
                 if (allImages.isEmpty()) {
@@ -175,30 +179,35 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val context = getApplication<Application>()
                 val total = allImages.size
-                val hashMap = mutableMapOf<Long, Long>()
 
-                // 并行计算 dHash：每批 100 张，利用 Dispatchers.IO 线程池（默认 64 并发）
-                val batchSize = 100
-                for (batchStart in 0 until total step batchSize) {
-                    val batchEnd = minOf(batchStart + batchSize, total)
-                    val deferredHashes = allImages.subList(batchStart, batchEnd).map { img ->
-                        async(Dispatchers.IO) {
-                            val hash = DHashCalculator.computeFast(context, img.uri)
-                            img.id to hash
-                        }
+                // Phase 1: 批量计算 dHash（复用已知宽高，节省 15000 次文件打开）
+                _dHashScanState.value = DHashScanState.Computing(0, total, "computing")
+                val hashMap = DHashCalculator.computeBatch(
+                    context = context,
+                    images = allImages,
+                    onProgress = { computed, _ ->
+                        _dHashScanState.value = DHashScanState.Computing(computed, total, "computing")
                     }
-                    deferredHashes.forEach { deferred ->
-                        val (id, hash) = deferred.await()
-                        if (hash != null) hashMap[id] = hash
-                    }
-                    _dHashScanState.value = DHashScanState.Computing(batchEnd, total)
-                }
+                )
 
-                dHashCache = hashMap
+                // 更新缓存
+                dHashCache = hashMap.toMutableMap()
                 _dHashCacheSize.value = hashMap.size
                 _dHashCacheBytes.value = hashMap.size * 48L
                 _dHashCacheCreatedAt.value = System.currentTimeMillis()
-                val dHashGroups = finder.findDuplicatesByDHash(hashMap, allImages)
+
+                // Phase 2: 分桶索引 + 滑动窗口比较
+                _dHashScanState.value = DHashScanState.Computing(total, total, "comparing")
+                val dHashGroups = finder.findDuplicatesByDHashBatched(
+                    hashMap = hashMap,
+                    images = allImages,
+                    onPhase = { phase, progress, total ->
+                        if (phase == "compare") {
+                            _dHashScanState.value = DHashScanState.Computing(progress, total, "comparing")
+                        }
+                    }
+                )
+
                 _dHashScanState.value = DHashScanState.Complete(dHashGroups)
 
                 // 将 dHash 结果追加到 ScanState.Complete
@@ -216,6 +225,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     ) + dHashGroups
                     _scanState.value = ScanState.Complete(allImages, groups)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // 协程被取消，不更新错误状态
+                _dHashScanState.value = DHashScanState.Idle
             } catch (e: Exception) {
                 _dHashScanState.value = DHashScanState.Error(e.message ?: "dHash 扫描失败")
             }
@@ -245,7 +257,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
      * dHash 单图搜索：在所有图片中找出与样本相似的图片
      * 结果追加到当前 SearchState.Ready 的 groups 中
      *
-     * 优化：使用 computeFast() + 并行计算缺失的 dHash
+     * 优化：使用 computeFastKnownSize() + 批量计算缺失的 dHash
      */
     fun searchSampleByDHash(sample: ImageMetadata) {
         viewModelScope.launch {
@@ -255,9 +267,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val context = getApplication<Application>()
 
-                // 优先从缓存读取样本 dHash，否则用 computeFast()
+                // 优先从缓存读取样本 dHash，否则用 computeFastKnownSize
                 val sampleHash: Long = dHashCache[sample.id]
-                    ?: DHashCalculator.computeFast(context, sample.uri)
+                    ?: DHashCalculator.computeFastKnownSize(context, sample.uri, sample.width, sample.height)
                     ?: run {
                         _searchState.value = SearchState.Error("无法计算该图片的 dHash，可能格式不支持")
                         return@launch
@@ -267,23 +279,14 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     dHashCache[sample.id] = sampleHash
                 }
 
-                // 并行补全缺失的 dHash
+                // 批量补全缺失的 dHash（使用已知宽高）
                 val missingImages = allImages.filter { !dHashCache.containsKey(it.id) }
                 if (missingImages.isNotEmpty()) {
-                    val batchSize = 100
-                    for (batchStart in 0 until missingImages.size step batchSize) {
-                        val batchEnd = minOf(batchStart + batchSize, missingImages.size)
-                        val deferredHashes = missingImages.subList(batchStart, batchEnd).map { img ->
-                            async(Dispatchers.IO) {
-                                val h = DHashCalculator.computeFast(context, img.uri)
-                                img.id to h
-                            }
-                        }
-                        deferredHashes.forEach { deferred ->
-                            val (id, h) = deferred.await()
-                            if (h != null) dHashCache[id] = h
-                        }
-                    }
+                    val newHashes = DHashCalculator.computeBatch(
+                        context = context,
+                        images = missingImages
+                    )
+                    dHashCache.putAll(newHashes)
                 }
                 _dHashCacheSize.value = dHashCache.size
                 _dHashCacheBytes.value = dHashCache.size * 48L
