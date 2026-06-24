@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -187,9 +187,11 @@ fun ResultsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
-                items(groups, key = { it.id }) { group ->
+                itemsIndexed(groups) { index, group ->
                     DuplicateGroupCard(
                         group = group,
+                        index = index + 1,
+                        total = groups.size,
                         onImageClick = onImageClick,
                         onImageLongClick = { image ->
                             selectedImage = image
