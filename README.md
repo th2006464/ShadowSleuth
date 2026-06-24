@@ -272,6 +272,14 @@ Get the latest APK from [GitHub Releases](https://github.com/th2006464/ShadowSle
 
 ## 📋 Changelog
 
+### v1.3.1 (2026-06-24) — Bug Fixes + Performance Polish
+
+| 🇨🇳 | 🇬🇧 |
+|:---|:---|
+| **修复：底部导航栏 Scan 按钮无法返回扫描页**：改用 popBackStack 正确回退 | **Fixed: Scan tab not navigating back**: Replaced navigate()+popUpTo with popBackStack |
+| **修复：dHash 搜索选取图片报 \无法计算该dHash\**：增加 computeFast 兜底 + URI 匹配缓存 | **Fixed: dHash search errors on picked images**: Fallback computeFast + URI cache lookup |
+| **修复：同时间戳图片被 dHash 排除**：dHash 匹配不再受 allSameSaveTime 限制 | **Fixed: Same-timestamp images excluded from dHash**: Removed allSameSaveTime for dHash matches |
+
 ### v1.3.0 (2026-06-24) — dHash Bucket Index Optimization
 
 | 🇨🇳 | 🇬🇧 |
@@ -315,4 +323,5 @@ MIT — see [LICENSE](LICENSE).
   <br>
   <sub>Made with ❤️ by <a href="https://github.com/th2006464">th2006464</a></sub>
 </div>
+
 

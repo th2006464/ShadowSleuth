@@ -146,7 +146,7 @@ class DuplicateFinder {
                 }
             }
 
-            if (similar.size >= 2 && !allSameSaveTime(similar)) {
+            if (similar.size >= 2) {
                 similar.forEach { used.add(it.id) }
                 groups.add(
                     DuplicateGroup(
@@ -276,7 +276,7 @@ class DuplicateFinder {
                 }
             }
 
-            if (similar.size >= 2 && !allSameSaveTime(similar)) {
+            if (similar.size >= 2) {
                 similar.forEach { used.add(it.id) }
                 groups.add(
                     DuplicateGroup(
@@ -318,7 +318,7 @@ class DuplicateFinder {
             DHashCalculator.isSimilar(sampleHash, hash)
         }
         val groupImages = listOf(sample) + matches
-        if (matches.isEmpty() || allSameSaveTime(groupImages)) return emptyList()
+        if (matches.isEmpty()) return emptyList()
         return listOf(
             DuplicateGroup(
                 id = UUID.randomUUID().toString(),

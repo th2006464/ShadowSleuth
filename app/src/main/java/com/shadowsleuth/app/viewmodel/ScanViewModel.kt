@@ -269,7 +269,12 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
                 // 优先从缓存读取样本 dHash，否则用 computeFastKnownSize
                 val sampleHash: Long = dHashCache[sample.id]
+                    // 如果样本图片是通过系统相册选取的(ID 不同)，尝试用 URI 匹配缓存
+                    ?: allImages.find { it.uri == sample.uri }?.let { dHashCache[it.id] }
+                    // 有已知宽高时用快速版本
                     ?: DHashCalculator.computeFastKnownSize(context, sample.uri, sample.width, sample.height)
+                    // 系统相册选取的图片可能宽高未知，用 computeFast 自己探测尺寸
+                    ?: DHashCalculator.computeFast(context, sample.uri)
                     ?: run {
                         _searchState.value = SearchState.Error("无法计算该图片的 dHash，可能格式不支持")
                         return@launch

@@ -1,4 +1,4 @@
-package com.shadowsleuth.app
+﻿package com.shadowsleuth.app
 
 import android.content.Intent
 import android.net.Uri
@@ -202,6 +202,9 @@ private fun MainApp(
                                     when {
                                         selected && screen == Screen.Results -> {
                                             viewModel.scrollToTopResults()
+                                        }
+                                        !selected && screen == Screen.Scan -> {
+                                            navController.popBackStack(Screen.Scan.route, inclusive = false)
                                         }
                                         !selected -> {
                                             navController.navigate(screen.route) {
