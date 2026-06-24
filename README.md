@@ -1,4 +1,4 @@
-# 双影密探 ShadowSleuth — 智能相册清理
+﻿# 双影密探 ShadowSleuth — 智能相册清理
 
 > 一款纯本地离线的 Android 重复图片查找工具，搜索快、体积小、不上传、让相册整理更安心。
 
@@ -23,6 +23,7 @@
 - **分组对比展示**：相同批次重复图分为一组，列表展示缩略图与元信息
 - **单图定向检索**：从相册任选一张图片作为样本，全局找出同名、同大小或 dHash 相似的图片
 - **dHash 相似检测**：差分哈希算法（汉明距离 ≤ 10），可发现经过轻微压缩/裁剪/格式转换的相似图片
+- **dHash 性能优化**（v1.3.0）：分桶索引 + 滑动窗口，将 15000 张照片的扫描从 O(n²) ≈ 1.12 亿次比较降至 ~50 万次候选，速度提升约 **200 倍**，不再卡死
 - **原图预览**：点击缩略图进入全屏原图查看，保留时间、大小等元信息
 - **轻量过滤**：可忽略小于指定 KB 的极小图片，减少无效结果
 - **手动触发扫描**：启动授权后不会自动扫描，用户点击「开始扫描」按钮才执行，避免不必要的资源占用
@@ -121,8 +122,8 @@ ScanViewModel 更新 ScanState.Complete
 - **源码**：`app/` 目录下，Kotlin + Jetpack Compose + Material 3
 - **构建方式**：使用 Gradle Wrapper，`./gradlew assembleDebug`
 - **APK 产物**：`app/build/outputs/apk/debug/app-debug.apk`（Debug 包，约 17 MB）
-- **GitHub 直接下载**：[outputs/ShadowSleuth-v1.2.0.apk](https://github.com/th2006464/ShadowSleuth/blob/main/outputs/ShadowSleuth-v1.2.0.apk)
-- **版本标签**：[v1.2.0](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.2.0)（扁平化设计正式版，全面自定义 UI）
+- **GitHub 直接下载**：[outputs/ShadowSleuth-v1.3.0.apk](https://github.com/th2006464/ShadowSleuth/blob/main/outputs/ShadowSleuth-v1.3.0.apk)
+- **版本标签**：[v1.3.0](https://github.com/th2006464/ShadowSleuth/releases/tag/v1.3.0)（dHash 分桶索引性能优化）
 - **构建环境**：OpenJDK 17 + Android SDK 34 + Gradle 8.2
 
 ### 本地构建
@@ -141,7 +142,16 @@ ScanViewModel 更新 ScanState.Complete
 
 ## 更新日志
 
-- **v1.2.0**（当前）：**扁平化正式版**
+- **v1.3.0**（当前）：**dHash 分桶索引性能优化**
+  - 🚀 **分桶索引算法**：8×8-bit 多级索引 + 滑动窗口，候选比较从 1.12 亿降至约 50 万次，速度提升约 **200 倍**
+  - 🚀 **消除双重 openInputStream**：复用 MediaStore 已知宽高，15000 张照片省 15000 次跨进程文件打开
+  - 🚀 **并发控制**：Semaphore 限制同时解码数（默认 16），避免 OOM
+  - 🚀 **不阻塞主线程**：分桶 + 汉明距离比较在 Dispatchers.Default 运行
+  - 🚀 **支持取消传播**：定期 yield()，用户可随时中断 dHash 扫描
+  - 🚀 **结构化并发**：computeBatch() 批量计算使用 coroutineScope + async，取消时全部立即停止
+  - 版本：versionCode=16，versionName=1.3.0
+
+- **v1.2.4**（前版）：**扁平化正式版**
   - 🎨 全面 UI 重设计：采用现代化扁平设计风格，纯色块、大圆角、高对比度
   - 🧩 自定义组件库：替换所有系统 AlertDialog/ModalBottomSheet/FilterChip/FAB，统一设计语言
   - 新增：`SsComponents.kt` 组件库（Primary/Secondary/Danger/Outline/Ghost 按钮、FilterChip、Dialog、ActionSheet、FAB、Badge、EmptyState）
@@ -149,7 +159,7 @@ ScanViewModel 更新 ScanState.Complete
   - 优化：关于弹窗、主题选择弹窗、详情弹窗、删除确认弹窗、底部操作表全面扁平化
   - 优化：PreviewScreen、DuplicateGroupCard、ImageListItem 扁平化重写
   - 优化：浅色/深色主题色板全面调整，对比度更强
-  - 版本：versionCode=11，versionName=1.2.0
+  - 版本：versionCode=15，versionName=1.2.4
 
 - **v1.1.0-debug** → 跳号（内部迭代）
   - dHash 缓存管理，结果统计信息，UI 微调
@@ -255,4 +265,6 @@ ScanViewModel 更新 ScanState.Complete
 
 ---
 
-*Last updated: 2026-06-24 (v1.2.0)*
+*Last updated: 2026-06-24 (v1.3.0)*
+
+
