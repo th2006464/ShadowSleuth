@@ -38,6 +38,10 @@ Thumbs.db
 .workbuddy/memory/
 .workbuddy/agents/
 
+# Keystore
+*.keystore
+keystore.properties
+
 # Logs
 *.log
 
