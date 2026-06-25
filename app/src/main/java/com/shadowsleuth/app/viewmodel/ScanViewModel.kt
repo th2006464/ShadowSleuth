@@ -210,12 +210,11 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
                 _dHashScanState.value = DHashScanState.Complete(dHashGroups)
 
-                // 将 dHash 结果追加到 ScanState.Complete
+                // 将 dHash 结果追加到 ScanState.Complete（增量合并，避免大列表双重遍历）
                 val currentScan = _scanState.value
                 if (currentScan is ScanState.Complete) {
-                    val existingIds = currentScan.groups.map { it.id }.toSet()
-                    val merged = currentScan.groups +
-                        dHashGroups.filter { it.id !in existingIds }
+                    // dHash 分组使用新 UUID，不会与已有分组冲突，直接追加
+                    val merged = currentScan.groups + dHashGroups
                     _scanState.value = ScanState.Complete(currentScan.images, merged)
                 } else {
                     val groups = finder.findDuplicates(

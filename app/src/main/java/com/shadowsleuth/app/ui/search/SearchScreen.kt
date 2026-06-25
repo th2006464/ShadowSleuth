@@ -5,7 +5,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,7 +28,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ImageSearch
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -145,8 +149,11 @@ fun SearchScreen(
                 is SearchState.Ready -> {
                     val sample = state.sample
                     val groups = state.groups
+                    val hasDHashGroup = groups.any {
+                        it.matchType == com.shadowsleuth.app.data.model.DuplicateGroup.MatchType.DHASH
+                    }
                     Column(modifier = Modifier.fillMaxSize()) {
-                        // Sample image with label
+                        // Sample image card with inline dHash button
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -158,11 +165,77 @@ fun SearchScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text(
-                                    text = "样本图片",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                // Header row: label on left, dHash button on right
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "样本图片",
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    // Compact dHash button
+                                    if (!hasDHashGroup) {
+                                        if (isDHashSearching) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(14.dp),
+                                                    strokeWidth = 2.dp,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = "搜索中…",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        } else {
+                                            val interactionSource = remember { MutableInteractionSource() }
+                                            Row(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                                    .clickable(
+                                                        interactionSource = interactionSource,
+                                                        indication = rememberRipple()
+                                                    ) {
+                                                        isDHashSearching = true
+                                                        viewModel.searchSampleByDHash(sample)
+                                                    }
+                                                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.AutoAwesome,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(13.dp),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = "dHash",
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        // dHash done — show checkmark badge
+                                        if (isDHashSearching) {
+                                            isDHashSearching = false
+                                        }
+                                        Text(
+                                            text = "✓ dHash",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 ThumbnailImage(image = sample, size = 88)
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -177,40 +250,6 @@ fun SearchScreen(
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
-
-                        // dHash similar search button
-                        val hasDHashGroup = groups.any {
-                            it.matchType == com.shadowsleuth.app.data.model.DuplicateGroup.MatchType.DHASH
-                        }
-                        if (!hasDHashGroup) {
-                            if (isDHashSearching) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "正在进行 dHash 相似搜索…",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                            } else {
-                                SsSecondaryButton(
-                                    text = stringResource(R.string.dhash_similar_search),
-                                    onClick = {
-                                        isDHashSearching = true
-                                        viewModel.searchSampleByDHash(sample)
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    icon = Icons.Filled.AutoAwesome
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                        }
 
                         if (groups.isEmpty()) {
                             Box(

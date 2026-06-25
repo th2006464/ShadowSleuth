@@ -12,7 +12,6 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
-
 /**
  * dHash（差分哈希）计算器
  *
@@ -107,6 +106,8 @@ object DHashCalculator {
      * 扫描阶段已通过 MediaStore 拿到图片的 width/height，
      * 直接传入可省一次 ContentProvider IPC 调用。15000 张图省 15000 次文件打开。
      *
+     * v1.3.3 优化：使用 RGB_565 解码，Bitmap 内存减半（dHash 只看亮度，不需要色彩精度）。
+     *
      * @param context      Android 上下文
      * @param uri          图片 URI
      * @param imgWidth     已知图片宽度（来自 MediaStore）
@@ -126,7 +127,10 @@ object DHashCalculator {
 
             val inSampleSize = calculateInSampleSize(imgWidth, imgHeight, targetPreviewSize, targetPreviewSize)
 
-            val loadOptions = BitmapFactory.Options().apply { this.inSampleSize = inSampleSize }
+            val loadOptions = BitmapFactory.Options().apply {
+                this.inSampleSize = inSampleSize
+                this.inPreferredConfig = Bitmap.Config.RGB_565 // 内存减半，dHash 只需亮度
+            }
             val inputStream = context.contentResolver.openInputStream(uri) ?: return@withContext null
             val bitmap = try {
                 BitmapFactory.decodeStream(inputStream, null, loadOptions)
@@ -149,7 +153,7 @@ object DHashCalculator {
      *
      * @param context     Android 上下文
      * @param images      图片列表（需已填充 width / height）
-     * @param parallelism 并发解码上限（默认 16，平衡速度与内存）
+     * @param parallelism 并发解码上限（默认 8，平衡速度与内存）
      * @param batchSize   每批提交数量（默认 50）
      * @param onProgress  (已计算数, 总数) → Unit 进度回调（在主线程调用）
      * @return { imageId → dHash } 映射，仅包含计算成功的项
@@ -157,7 +161,7 @@ object DHashCalculator {
     suspend fun computeBatch(
         context: Context,
         images: List<ImageMetadata>,
-        parallelism: Int = 16,
+        parallelism: Int = 8,
         batchSize: Int = 50,
         onProgress: (computed: Int, total: Int) -> Unit = { _, _ -> }
     ): Map<Long, Long> = withContext(Dispatchers.IO) {

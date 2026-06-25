@@ -21,10 +21,10 @@ import java.util.UUID
  *   不视为重复组，避免误报。
  * - 宽或高为 0 的无效图片已在扫描阶段过滤，不再进入匹配。
  *
- * 性能优化（v1.3.0）：
- * - findDuplicatesByDHashBatched 使用 8×8-bit 分桶索引 + 滑动窗口双重候选策略，
- *   将 O(n²) 全量比较从 ~112M 次降至约 ~0.5M 次候选比较，
- *   在 15000 张图片上速度提升约 200 倍。
+ * 性能优化（v1.3.3）：
+ * - findDuplicatesByDHashBatched 使用 8×8-bit 分桶索引 + 流式比较，
+ *   不再缓存候选对，内存占用从 ~1GB 降至 ~10MB，解决 15000 张图 OOM 崩溃。
+ *   保留分桶索引（两张汉明距离 ≤ 7 的图必共享至少一个桶），砍掉滑动窗口。
  */
 class DuplicateFinder {
 
@@ -166,16 +166,18 @@ class DuplicateFinder {
     }
 
     /**
-     * 全量 dHash 扫描（优化版）：基于分桶索引 + 滑动窗口的高性能实现。
+     * 全量 dHash 扫描（优化版）：基于分桶索引 + 流式比较的高性能实现。
      *
      * 策略：
      * 1. **8×8-bit 分桶索引**：
      *    - 将每个 64-bit hash 拆成 8 个 8-bit 块
- Ryan    - 每张图被 8 个桶索引，每个桶最多 256 个条目
-     *    - 两张相似图片（汉明距离 ≤ 10）几乎必然共享至少一个桶
-     *    - 候选次数从 O(n²/2) ≈ 1.12 亿降至 O(n × avgBucketSize) ≈ 50 万次
-     * 2. **滑动窗口补充**：
-     *    将 hash 按数值排序后，每个图片检查后续 500 张。补充分桶可能遗漏的边界情况。
+     *    - 每张图被 8 个桶索引，每个桶最多 256 个条目
+     *    - 两张相似图片（汉明距离 ≤ 7）必然共享至少一个桶
+     *    - 候选次数从 O(n²/2) ≈ 1.12 亿降至 O(n × avgBucketSize × 8) ≈ 50-100 万次
+     * 2. **流式比较（v1.3.3 改进）**：
+     *    - 不再预收集所有候选对到内存（旧版 ~1GB → OOM）
+     *    - 遍历每张图时，临时从 8 个桶捞候选 → 去重 → 算汉明距离 → 建组 → 丢弃
+     *    - 内存占用从 ~1GB 降至 ~10MB（仅桶索引）
      * 3. **在 Dispatchers.Default 上运行**，不阻塞主线程
      * 4. **定期 yield()**，支持取消传播
      *
@@ -207,71 +209,28 @@ class DuplicateFinder {
             }
         }
 
-        // ── Phase 2: 收集候选对（去重） ──
-        withContext(Dispatchers.Main) { onPhase("pairs", 0, total) }
+        // ── Phase 2: 流式比较 ──
+        // 不预存候选对，每张图临时从桶里捞候选 → 去重 → 比较 → 丢弃
+        withContext(Dispatchers.Main) { onPhase("compare", 0, total) }
 
-        data class IdPair(val a: Long, val b: Long) // 保证 a < b
-        val seen = hashSetOf<Long>() // 编码为 a shl 32 or b 的 Long（id 实际是 Long 但不超过 2^31）
-        // 用 Long 编码 pair: lower 32 bits = b, upper 32 bits = a
-        fun encodePair(a: Long, b: Long): Long {
-            val small = minOf(a, b)
-            val large = maxOf(a, b)
-            return (small shl 32) or (large and 0xFFFFFFFFL)
-        }
-
-        val candidateMap = mutableMapOf<Long, MutableSet<Long>>()
-
-        for (chunk in 0 until 8) {
-            yield()
-            for (key in 0 until 256) {
-                val ids = bucketsByChunk[chunk][key]
-                val n = ids.size
-                if (n < 2) continue
-                for (i in 0 until n - 1) {
-                    for (j in i + 1 until n) {
-                        val code = encodePair(ids[i], ids[j])
-                        if (seen.add(code)) {
-                            val a = ids[i]; val b = ids[j]
-                            candidateMap.getOrPut(a) { mutableSetOf() }.add(b)
-                            candidateMap.getOrPut(b) { mutableSetOf() }.add(a)
-                        }
-                    }
-                }
-            }
-        }
-
-        // ── Phase 3: 滑动窗口补充候选 ──
-        withContext(Dispatchers.Main) { onPhase("window", 0, total) }
-
-        val sortedIds = hashMap.entries.sortedBy { it.value }.map { it.key }
-        val windowSize = 500
-        for (i in sortedIds.indices) {
-            yield()
-            val a = sortedIds[i]
-            val end = minOf(i + 1 + windowSize, sortedIds.size)
-            for (j in i + 1 until end) {
-                val b = sortedIds[j]
-                val code = encodePair(a, b)
-                if (seen.contains(code)) continue // 已在候选集中
-                if (seen.add(code)) {
-                    candidateMap.getOrPut(a) { mutableSetOf() }.add(b)
-                    candidateMap.getOrPut(b) { mutableSetOf() }.add(a)
-                }
-            }
-        }
-
-        // ── Phase 4: 汉明距离比较 ──
         for (i in imageList.indices) {
             yield() // 支持取消
             val imgA = imageList[i]
             if (imgA.id in used) continue
             val hashA = hashMap[imgA.id] ?: continue
 
+            // 从 8 个桶收集候选 id，用局部 HashSet 去重
+            val checked = hashSetOf<Long>()
             val similar = mutableListOf(imgA)
-            val candidates = candidateMap[imgA.id]
-            if (candidates != null) {
-                for (candidateId in candidates) {
+
+            for (chunk in 0 until 8) {
+                val key = ((hashA shr (chunk * 8)) and 0xFF).toInt()
+                val bucket = bucketsByChunk[chunk][key]
+                for (candidateId in bucket) {
+                    if (candidateId == imgA.id) continue
                     if (candidateId in used) continue
+                    if (!checked.add(candidateId)) continue // 已查过
+
                     val hashB = hashMap[candidateId] ?: continue
                     if (DHashCalculator.isSimilar(hashA, hashB)) {
                         imageById[candidateId]?.let { similar.add(it) }
